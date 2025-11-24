@@ -9,6 +9,10 @@ const commentCountBlock = bigPicture.querySelector('.social__comment-count');
 const commentsLoader = bigPicture.querySelector('.comments-loader');
 const cancelButton = bigPicture.querySelector('.big-picture__cancel');
 
+let currentComments = [];
+let commentsShown = 0;
+const COMMENTS_PER_PORTION = 5;
+
 const createComment = (comment) => {
   const commentElement = document.createElement('li');
   commentElement.classList.add('social__comment');
@@ -30,25 +34,46 @@ const createComment = (comment) => {
   return commentElement;
 };
 
-const renderComments = (comments) => {
-  socialComments.innerHTML = '';
+const renderCommentsPortion = () => {
+  const commentsToShow = currentComments.slice(commentsShown, commentsShown + COMMENTS_PER_PORTION);
 
-  comments.forEach(comment => {
+  commentsToShow.forEach(comment => {
     const commentElement = createComment(comment);
     socialComments.appendChild(commentElement);
   });
+
+  commentsShown += commentsToShow.length;
+
+  const commentCountText = `${commentsShown} из ${currentComments.length} комментариев`;
+  commentCountBlock.innerHTML = commentCountText;
+
+  if (commentsShown >= currentComments.length) {
+    commentsLoader.classList.add('hidden');
+  } else {
+    commentsLoader.classList.remove('hidden');
+  }
+};
+
+const resetComments = () => {
+  currentComments = [];
+  commentsShown = 0;
+  socialComments.innerHTML = '';
 };
 
 const openBigPicture = (pictureData) => {
+  resetComments();
+
   bigPictureImg.src = pictureData.url;
   likesCount.textContent = pictureData.likes;
   commentsCount.textContent = pictureData.comments.length;
   socialCaption.textContent = pictureData.description;
 
-  renderComments(pictureData.comments);
+  currentComments = pictureData.comments;
 
-  commentCountBlock.classList.add('hidden');
-  commentsLoader.classList.add('hidden');
+  commentCountBlock.classList.remove('hidden');
+  commentsLoader.classList.remove('hidden');
+
+  renderCommentsPortion();
 
   bigPicture.classList.remove('hidden');
 
@@ -56,6 +81,7 @@ const openBigPicture = (pictureData) => {
 
   document.addEventListener('keydown', onDocumentKeydown);
   cancelButton.addEventListener('click', closeBigPicture);
+  commentsLoader.addEventListener('click', onCommentsLoaderClick);
 };
 
 const closeBigPicture = () => {
@@ -64,6 +90,9 @@ const closeBigPicture = () => {
 
   document.removeEventListener('keydown', onDocumentKeydown);
   cancelButton.removeEventListener('click', closeBigPicture);
+  commentsLoader.removeEventListener('click', onCommentsLoaderClick);
+
+  resetComments();
 };
 
 const onDocumentKeydown = (evt) => {
@@ -71,6 +100,10 @@ const onDocumentKeydown = (evt) => {
     evt.preventDefault();
     closeBigPicture();
   }
+};
+
+const onCommentsLoaderClick = () => {
+  renderCommentsPortion();
 };
 
 bigPicture.addEventListener('click', (evt) => {
