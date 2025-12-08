@@ -1,12 +1,7 @@
 const thumbnailRenderer = (function() {
+  const pictureTemplate = document.querySelector('#picture').content.querySelector('.picture');
 
   function createThumbnail(photoData) {
-    const pictureTemplate = document.querySelector('#picture').content.querySelector('.picture');
-
-    if (!pictureTemplate) {
-      throw new Error('Шаблон #picture не найден в DOM');
-    }
-
     const thumbnailElement = pictureTemplate.cloneNode(true);
     const image = thumbnailElement.querySelector('.picture__img');
     image.src = photoData.url;
@@ -20,13 +15,6 @@ const thumbnailRenderer = (function() {
 
   function renderThumbnails(photosData) {
     const container = document.querySelector('.pictures');
-    if (!container) {
-      throw new Error('Контейнер .pictures не найден');
-    }
-
-    // Очищаем старые миниатюры
-    container.innerHTML = '';
-
     const fragment = document.createDocumentFragment();
     photosData.forEach((photo) => {
       const thumbnail = createThumbnail(photo);
