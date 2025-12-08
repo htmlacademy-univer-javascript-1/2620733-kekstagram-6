@@ -1,105 +1,58 @@
-'use strict';
+import { closeForm } from './slider.js';
+import { isEscapeKey } from './util.js';
+import { uploadData } from './api.js';
 
-const COMMENTS_PER_PORTION = 5;
-const MAX_COMMENT_LENGTH = 140;
-const DEFAULT_AVATAR = 'img/avatar-default.svg';
+const errorMessage = document.querySelector('#error').content.querySelector('.error');
+const successMessage = document.querySelector('#success').content.querySelector('.success');
+const formUpload = document.querySelector('.img-upload__form');
 
-const validateComment = (comment) => {
-  if (!comment || typeof comment !== 'object') {
-    return false;
-  }
-
-  const hasMessage = typeof comment.message === 'string' && comment.message.trim() !== '';
-  const hasValidMessageLength = comment.message.length <= MAX_COMMENT_LENGTH;
-  const hasName = typeof comment.name === 'string' && comment.name.trim() !== '';
-
-  return hasMessage && hasValidMessageLength && hasName;
+const closePopup = () => {
+  const popup = document.querySelector('.error') || document.querySelector('.success');
+  popup.remove();
 };
 
-const createCommentElement = (comment) => {
-  const commentElement = document.createElement('li');
-  commentElement.classList.add('social__comment');
-
-  const avatarImage = document.createElement('img');
-  avatarImage.classList.add('social__picture');
-  avatarImage.src = comment.avatar || DEFAULT_AVATAR;
-  avatarImage.alt = comment.name || 'Анонимный пользователь';
-  avatarImage.width = 35;
-  avatarImage.height = 35;
-
-  const commentText = document.createElement('p');
-  commentText.classList.add('social__text');
-  commentText.textContent = comment.message;
-
-  commentElement.append(avatarImage, commentText);
-
-  return commentElement;
-};
-
-const renderCommentsPortion = (comments, container, startIndex) => {
-  if (!Array.isArray(comments) || !container) {
-    return { renderedCount: 0, totalCount: 0, hasMore: false };
-  }
-
-  const endIndex = Math.min(startIndex + COMMENTS_PER_PORTION, comments.length);
-  const commentsToShow = comments.slice(startIndex, endIndex);
-
-  const fragment = document.createDocumentFragment();
-
-  let validCommentsCount = 0;
-  commentsToShow.forEach((comment) => {
-    if (validateComment(comment)) {
-      const commentElement = createCommentElement(comment);
-      fragment.append(commentElement);
-      validCommentsCount++;
-    }
-  });
-
-  container.append(fragment);
-
-  return {
-    renderedCount: startIndex + validCommentsCount,
-    totalCount: comments.length,
-    hasMore: endIndex < comments.length
-  };
-};
-
-const clearComments = (container) => {
-  if (!container) {
-    return;
-  }
-
-  container.innerHTML = '';
-};
-
-const formatCommentsCount = (count) => {
-  if (count === 0) {
-    return 'Нет комментариев';
-  }
-
-  const lastDigit = count % 10;
-  const lastTwoDigits = count % 100;
-
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
-    return `${count} комментариев`;
-  }
-
-  switch (lastDigit) {
-    case 1:
-      return `${count} комментарий`;
-    case 2:
-    case 3:
-    case 4:
-      return `${count} комментария`;
-    default:
-      return `${count} комментариев`;
+const onEscKeydown = (evt) => {
+  if (isEscapeKey(evt)) {
+    closePopup();
   }
 };
 
-export {
-  validateComment,
-  createCommentElement,
-  renderCommentsPortion,
-  clearComments,
-  formatCommentsCount
+const onPopupClick = (evt) => {
+  if (!evt.target.classList.contains('succes__inner') && !evt.target.classList.contains('error__inner')) {
+    evt.preventDefault();
+    closePopup();
+    document.removeEventListener('keydown', onEscKeydown);
+  }
 };
+
+const showMessage = (message) => {
+  message.addEventListener('click', onPopupClick);
+  document.body.appendChild(message);
+  document.addEventListener('keydown', onEscKeydown, {once: true});
+};
+
+const showErrorMessage = () => {
+  const messageFragment = errorMessage.cloneNode(true);
+  showMessage(messageFragment);
+};
+
+const showSuccesMessage = () => {
+  const messageFragment = successMessage.cloneNode(true);
+  showMessage(messageFragment);
+};
+
+const onSuccess = () => {
+  closeForm();
+  showSuccesMessage();
+};
+
+const onFail = () => {
+  showErrorMessage();
+};
+
+const onFormUploadSubmit = (evt) => {
+  evt.preventDefault();
+  uploadData(onSuccess, onFail, 'POST', new FormData(evt.target));
+};
+
+formUpload.addEventListener('submit', onFormUploadSubmit);
