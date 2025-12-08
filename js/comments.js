@@ -1,6 +1,9 @@
+'use strict';
+
 const COMMENTS_PER_PORTION = 5;
 const MAX_COMMENT_LENGTH = 140;
 const DEFAULT_AVATAR = 'img/avatar-default.svg';
+
 const validateComment = (comment) => {
   if (!comment || typeof comment !== 'object') {
     return false;
@@ -27,14 +30,14 @@ const createCommentElement = (comment) => {
   const commentText = document.createElement('p');
   commentText.classList.add('social__text');
   commentText.textContent = comment.message;
-  commentElement.appendChild(avatarImage);
-  commentElement.appendChild(commentText);
+
+  commentElement.append(avatarImage, commentText);
 
   return commentElement;
 };
 
 const renderCommentsPortion = (comments, container, startIndex) => {
-  if (!Array.isArray(comments)) {
+  if (!Array.isArray(comments) || !container) {
     return { renderedCount: 0, totalCount: 0, hasMore: false };
   }
 
@@ -43,30 +46,30 @@ const renderCommentsPortion = (comments, container, startIndex) => {
 
   const fragment = document.createDocumentFragment();
 
+  let validCommentsCount = 0;
   commentsToShow.forEach((comment) => {
     if (validateComment(comment)) {
       const commentElement = createCommentElement(comment);
-      fragment.appendChild(commentElement);
+      fragment.append(commentElement);
+      validCommentsCount++;
     }
   });
 
-  container.appendChild(fragment);
+  container.append(fragment);
 
   return {
-    renderedCount: endIndex,
+    renderedCount: startIndex + validCommentsCount,
     totalCount: comments.length,
     hasMore: endIndex < comments.length
   };
 };
 
 const clearComments = (container) => {
-  if (!container || !container.removeChild) {
+  if (!container) {
     return;
   }
 
-  while (container.firstChild) {
-    container.removeChild(container.firstChild);
-  }
+  container.innerHTML = '';
 };
 
 const formatCommentsCount = (count) => {
