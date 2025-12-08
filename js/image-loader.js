@@ -2,7 +2,6 @@
 
 const FILE_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 const DEFAULT_AVATAR_SRC = 'img/upload-default-image.jpg';
-const ALLOWED_FILE_EXTENSIONS = FILE_TYPES.map((type) => `.${type}`).join(', ');
 
 const createImageLoader = () => {
   const fileInputElement = document.querySelector('.img-upload__input');
@@ -13,112 +12,62 @@ const createImageLoader = () => {
     if (!file || typeof file.name !== 'string') {
       return false;
     }
-
     const fileName = file.name.toLowerCase();
-    const hasValidExtension = FILE_TYPES.some((type) => {
-      return fileName.endsWith(`.${type}`);
-    });
-
-    return hasValidExtension && file.type.startsWith('image/');
-  };
-
-  const showErrorMessage = (message) => {
-    window.alert(message);
+    return FILE_TYPES.some(type => fileName.endsWith(`.${type}`)) &&
+           file.type.startsWith('image/');
   };
 
   const loadAndPreviewImage = (file) => {
-    if (!file) {
-      return false;
-    }
-
-    if (!isValidFileType(file)) {
-      const errorMessage = `Пожалуйста, выберите файл изображения (${ALLOWED_FILE_EXTENSIONS})`;
-      showErrorMessage(errorMessage);
+    if (!file || !isValidFileType(file)) {
+      const allowed = FILE_TYPES.map(type => `.${type}`).join(', ');
+      window.alert(`Выберите файл изображения (${allowed})`);
       return false;
     }
 
     const reader = new FileReader();
 
-    const onLoadSuccess = () => {
+    reader.addEventListener('load', () => {
       if (previewImageElement) {
         previewImageElement.src = reader.result;
         previewImageElement.alt = file.name;
       }
+      effectsPreviewsElements.forEach(el => {
+        el.style.backgroundImage = `url(${reader.result})`;
+      });
+    });
 
-      if (effectsPreviewsElements.length > 0) {
-        const backgroundImageValue = `url(${reader.result})`;
-        effectsPreviewsElements.forEach((effectPreview) => {
-          effectPreview.style.backgroundImage = backgroundImageValue;
-        });
-      }
-    };
-
-    const onLoadError = () => {
-      showErrorMessage('Не удалось загрузить выбранный файл');
-    };
-
-    reader.addEventListener('load', onLoadSuccess);
-    reader.addEventListener('error', onLoadError);
+    reader.addEventListener('error', () => {
+      window.alert('Ошибка загрузки файла');
+    });
 
     reader.readAsDataURL(file);
     return true;
   };
 
   const onFileInputChange = () => {
-    if (!fileInputElement || !fileInputElement.files) {
-      return;
-    }
-
-    const file = fileInputElement.files[0];
-    if (!file) {
-      return;
-    }
-
-    const isSuccess = loadAndPreviewImage(file);
-    if (!isSuccess) {
-      resetUploadedImage();
+    const file = fileInputElement?.files?.[0];
+    if (file) {
+      if (!loadAndPreviewImage(file)) {
+        resetUploadedImage();
+      }
     }
   };
 
   const resetUploadedImage = () => {
-    if (fileInputElement) {
-      fileInputElement.value = '';
-    }
-
+    if (fileInputElement) fileInputElement.value = '';
     if (previewImageElement) {
       previewImageElement.src = DEFAULT_AVATAR_SRC;
       previewImageElement.alt = 'Изображение по умолчанию';
     }
-
-    effectsPreviewsElements.forEach((effectPreview) => {
-      effectPreview.style.backgroundImage = '';
+    effectsPreviewsElements.forEach(el => {
+      el.style.backgroundImage = '';
     });
   };
 
-  const validateDomElements = () => {
-    const errors = [];
-
-    if (!fileInputElement) {
-      errors.push('Не найден элемент .img-upload__input');
-    }
-
-    if (!previewImageElement) {
-      errors.push('Не найден элемент .img-upload__preview img');
-    }
-
-    return errors;
-  };
-
   const init = () => {
-    const validationErrors = validateDomElements();
-    if (validationErrors.length > 0) {
-      return;
-    }
+    if (!fileInputElement || !previewImageElement) return;
 
-    const currentSrc = previewImageElement.src;
-    const isEmptySrc = !currentSrc || currentSrc === '' || currentSrc === window.location.href;
-
-    if (isEmptySrc) {
+    if (!previewImageElement.src || previewImageElement.src === window.location.href) {
       previewImageElement.src = DEFAULT_AVATAR_SRC;
     }
 
