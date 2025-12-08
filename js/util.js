@@ -1,49 +1,92 @@
-export function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+'use strict';
 
-export function getUniqueNumbers(count, min, max) {
-    const numbers = [];
-    while (numbers.length < count) {
-        const num = getRandomInt(min, max);
-        if (!numbers.includes(num)) {
-            numbers.push(num);
-        }
-    }
-    return numbers;
-}
+const getRandomInt = (min, max) => {
+  if (min > max) {
+    [min, max] = [max, min];
+  }
 
-export function debounce(callback, timeoutDelay = 500) {
-    let timeoutId;
+  min = Math.ceil(min);
+  max = Math.floor(max);
 
-    return (...rest) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => callback.apply(this, rest), timeoutDelay);
-    };
-}
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
 
-export function shuffleArray(array) {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-}
+const getUniqueNumbers = (count, min, max) => {
+  if (min > max) {
+    [min, max] = [max, min];
+  }
 
-export function getRandomElements(array, count) {
-    if (array.length <= count) {
-        return shuffleArray(array);
-    }
+  const rangeSize = max - min + 1;
+  if (count > rangeSize) {
+    count = rangeSize;
+  }
 
-    const shuffled = shuffleArray(array);
-    return shuffled.slice(0, count);
-}
+  const numbers = new Set();
 
-export function isEscapeKey(evt) {
-    return evt.key === 'Escape' || evt.key === 'Esc' || evt.keyCode === 27;
-}
+  while (numbers.size < count) {
+    const num = getRandomInt(min, max);
+    numbers.add(num);
+  }
 
-export function isEnterKey(evt) {
-    return evt.key === 'Enter' || evt.keyCode === 13;
-}
+  return Array.from(numbers);
+};
+
+const debounce = (callback, timeoutDelay = 500) => {
+  let timeoutId;
+
+  return (...rest) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => callback.apply(this, rest), timeoutDelay);
+  };
+};
+
+const shuffleArray = (array) => {
+  const shuffled = [...array];
+
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  return shuffled;
+};
+
+const getRandomElements = (array, count) => {
+  if (!Array.isArray(array) || array.length === 0) {
+    return [];
+  }
+
+  if (count <= 0) {
+    return [];
+  }
+
+  if (array.length <= count) {
+    return shuffleArray(array);
+  }
+
+  const indices = getUniqueNumbers(count, 0, array.length - 1);
+  return indices.map((index) => array[index]);
+};
+
+const isEscapeKey = (evt) => {
+  return evt.key === 'Escape' || evt.key === 'Esc' || evt.keyCode === 27;
+};
+
+const isEnterKey = (evt) => {
+  return evt.key === 'Enter' || evt.keyCode === 13;
+};
+
+const isOutsideClick = (element, evt) => {
+  return !element.contains(evt.target);
+};
+
+export {
+  getRandomInt,
+  getUniqueNumbers,
+  debounce,
+  shuffleArray,
+  getRandomElements,
+  isEscapeKey,
+  isEnterKey,
+  isOutsideClick
+};
