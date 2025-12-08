@@ -4,7 +4,7 @@ const FILE_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 const DEFAULT_AVATAR_SRC = 'img/upload-default-image.jpg';
 
 const createImageLoader = () => {
-  const fileInputElement = document.querySelector('.img-upload__input');
+  const fileInputElement = document.querySelector('.img-upload__input, .img-upload_input');
   const previewImageElement = document.querySelector('.img-upload__preview img');
   const effectsPreviewsElements = document.querySelectorAll('.effects__preview');
 
