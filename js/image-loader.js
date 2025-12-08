@@ -1,4 +1,6 @@
-const FILE_TYPES = Object.freeze(['jpg', 'jpeg', 'png', 'gif', 'webp']);
+'use strict';
+
+const FILE_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 const DEFAULT_AVATAR_SRC = 'img/upload-default-image.jpg';
 const ALLOWED_FILE_EXTENSIONS = FILE_TYPES.map((type) => `.${type}`).join(', ');
 
@@ -8,7 +10,6 @@ const createImageLoader = () => {
   const effectsPreviewsElements = document.querySelectorAll('.effects__preview');
 
   const isValidFileType = (file) => {
-    // Б14. Проверка параметров
     if (!file || typeof file.name !== 'string') {
       return false;
     }
@@ -18,9 +19,7 @@ const createImageLoader = () => {
       return fileName.endsWith(`.${type}`);
     });
 
-    const hasValidMimeType = file.type.startsWith('image/');
-
-    return hasValidExtension && hasValidMimeType;
+    return hasValidExtension && file.type.startsWith('image/');
   };
 
   const showErrorMessage = (message) => {
@@ -51,10 +50,6 @@ const createImageLoader = () => {
         effectsPreviewsElements.forEach((effectPreview) => {
           effectPreview.style.backgroundImage = backgroundImageValue;
         });
-      }
-
-      if (window.imageEditor && typeof window.imageEditor.reset === 'function') {
-        window.imageEditor.reset();
       }
     };
 
@@ -95,11 +90,9 @@ const createImageLoader = () => {
       previewImageElement.alt = 'Изображение по умолчанию';
     }
 
-    if (effectsPreviewsElements.length > 0) {
-      effectsPreviewsElements.forEach((effectPreview) => {
-        effectPreview.style.backgroundImage = '';
-      });
-    }
+    effectsPreviewsElements.forEach((effectPreview) => {
+      effectPreview.style.backgroundImage = '';
+    });
   };
 
   const validateDomElements = () => {
@@ -119,7 +112,6 @@ const createImageLoader = () => {
   const init = () => {
     const validationErrors = validateDomElements();
     if (validationErrors.length > 0) {
-      validationErrors.forEach((error) => console.error(error));
       return;
     }
 
