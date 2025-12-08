@@ -18,9 +18,13 @@ const createImageLoader = () => {
   };
 
   const loadAndPreviewImage = (file) => {
-    if (!file || !isValidFileType(file)) {
+    if (!file) {
+      return false;
+    }
+
+    if (!isValidFileType(file)) {
       const allowed = FILE_TYPES.map(type => `.${type}`).join(', ');
-      window.alert(`Выберите файл изображения (${allowed})`);
+      window.alert(`Пожалуйста, выберите файл изображения (${allowed})`);
       return false;
     }
 
@@ -31,13 +35,14 @@ const createImageLoader = () => {
         previewImageElement.src = reader.result;
         previewImageElement.alt = file.name;
       }
+
       effectsPreviewsElements.forEach(el => {
         el.style.backgroundImage = `url(${reader.result})`;
       });
     });
 
     reader.addEventListener('error', () => {
-      window.alert('Ошибка загрузки файла');
+      window.alert('Не удалось загрузить выбранный файл');
     });
 
     reader.readAsDataURL(file);
@@ -45,29 +50,45 @@ const createImageLoader = () => {
   };
 
   const onFileInputChange = () => {
-    const file = fileInputElement?.files?.[0];
-    if (file) {
-      if (!loadAndPreviewImage(file)) {
-        resetUploadedImage();
-      }
+    if (!fileInputElement || !fileInputElement.files) {
+      return;
+    }
+
+    const file = fileInputElement.files[0];
+    if (!file) {
+      return;
+    }
+
+    const isSuccess = loadAndPreviewImage(file);
+    if (!isSuccess) {
+      resetUploadedImage();
     }
   };
 
   const resetUploadedImage = () => {
-    if (fileInputElement) fileInputElement.value = '';
+    if (fileInputElement) {
+      fileInputElement.value = '';
+    }
+
     if (previewImageElement) {
       previewImageElement.src = DEFAULT_AVATAR_SRC;
       previewImageElement.alt = 'Изображение по умолчанию';
     }
+
     effectsPreviewsElements.forEach(el => {
       el.style.backgroundImage = '';
     });
   };
 
   const init = () => {
-    if (!fileInputElement || !previewImageElement) return;
+    if (!fileInputElement || !previewImageElement) {
+      return;
+    }
 
-    if (!previewImageElement.src || previewImageElement.src === window.location.href) {
+    const currentSrc = previewImageElement.src;
+    const isEmptySrc = !currentSrc || currentSrc === '' || currentSrc === window.location.href;
+
+    if (isEmptySrc) {
       previewImageElement.src = DEFAULT_AVATAR_SRC;
     }
 
@@ -89,5 +110,11 @@ const createImageLoader = () => {
 };
 
 const imageLoader = createImageLoader();
+
+export const initImageLoader = imageLoader.init;
+export const resetUploadedImage = imageLoader.resetUploadedImage;
+export const loadAndPreviewImage = imageLoader.loadAndPreviewImage;
+export const destroyImageLoader = imageLoader.destroy;
+
 
 export default imageLoader;
