@@ -46,7 +46,7 @@
                   <!-- Изменение размера изображения -->
                   <fieldset class="img-upload__scale  scale">
                     <button type="button" class="scale__control  scale__control--smaller">Уменьшить</button>
-                    <input type="text" class="scale__control  scale__control--value" value="55%" title="Image Scale" name="scale" readonly>
+                    <input type="text" class="scale__control  scale__control--value" value="100%" title="Image Scale" name="scale" readonly>
                     <button type="button" class="scale__control  scale__control--bigger">Увеличить</button>
                   </fieldset>
 
@@ -231,38 +231,9 @@
   <template id="messages">
     <div class="img-upload__message  img-upload__message--loading">Загружаем...</div>
   </template>
+
+  <script src="nouislider/nouislider.js"></script>
+  <script src="pristine/pristine.min.js"></script>
   <script src="js/main.js" type="module"></script>
-  <div style="display: none;">
-  <input type="file" id="cypress-upload-fix" class="img-upload__input">
-</div>
-
-<script>
-  if (window.Cypress) {
-    // Связываем реальный и тестовый input
-    const realInput = document.querySelector('.img-upload__input[type="file"]');
-    const testInput = document.querySelector('#cypress-upload-fix');
-
-    if (realInput && testInput) {
-      // Делаем тестовый input видимым
-      testInput.parentElement.style.display = 'block';
-      testInput.style.cssText = 'position: absolute; top: 0; left: 0; width: 100px; height: 30px;';
-
-      // При изменении тестового input, обновляем реальный
-      testInput.addEventListener('change', function(e) {
-        if (e.target.files.length > 0) {
-          const dataTransfer = new DataTransfer();
-          dataTransfer.items.add(e.target.files[0]);
-          realInput.files = dataTransfer.files;
-
-          // Триггерим событие change
-          const changeEvent = new Event('change', { bubbles: true });
-          realInput.dispatchEvent(changeEvent);
-
-          console.log('Файл выбран через тестовый input');
-        }
-      });
-    }
-  }
-</script>
 </body>
 </html>
