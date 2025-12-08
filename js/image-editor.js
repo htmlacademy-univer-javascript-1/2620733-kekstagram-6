@@ -191,6 +191,8 @@ const imageEditor = (function() {
   };
 })();
 
+export default imageEditor;
+
 document.addEventListener('DOMContentLoaded', () => {
   imageEditor.init();
 });
