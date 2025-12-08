@@ -1,3 +1,5 @@
+import { sendData } from './api.js';
+
 const formModule = (function() {
   const form = document.querySelector('.img-upload__form');
   const fileInput = document.querySelector('.img-upload__input');
@@ -5,6 +7,8 @@ const formModule = (function() {
   const cancelButton = document.querySelector('.img-upload__cancel');
   const hashtagInput = form.querySelector('.text__hashtags');
   const commentInput = form.querySelector('.text__description');
+  const submitButton = form.querySelector('.img-upload__submit');
+  const effectLevel = document.querySelector('.img-upload__effect-level');
 
   const pristine = new Pristine(form, {
     classTo: 'img-upload__field-wrapper',
@@ -17,7 +21,7 @@ const formModule = (function() {
 
   const validateHashtags = (value) => {
     if (value === '') {
-      return true; // Пустое поле допустимо
+      return true;
     }
 
     const hashtags = value.trim().toLowerCase().split(/\s+/);
@@ -78,6 +82,116 @@ const formModule = (function() {
     'Комментарий не должен превышать 140 символов'
   );
 
+  const showMessage = (type, text) => {
+    hideMessage();
+
+    const template = document.querySelector(`#${type}`).content.cloneNode(true);
+    const messageElement = template.querySelector(`.${type}`);
+
+    if (text) {
+      const title = messageElement.querySelector(`.${type}__title`);
+      if (title) {
+        title.textContent = text;
+      }
+    }
+
+    document.body.appendChild(messageElement);
+
+    const closeMessage = () => {
+      messageElement.remove();
+      document.removeEventListener('keydown', onMessageEscKeydown);
+    };
+
+    const onMessageEscKeydown = (evt) => {
+      if (evt.key === 'Escape') {
+        closeMessage();
+      }
+    };
+
+    const onMessageClick = (evt) => {
+      if (!evt.target.closest(`.${type}__inner`)) {
+        closeMessage();
+      }
+    };
+
+    const closeButton = messageElement.querySelector(`.${type}__button`);
+    if (closeButton) {
+      closeButton.addEventListener('click', closeMessage);
+    }
+
+    messageElement.addEventListener('click', onMessageClick);
+    document.addEventListener('keydown', onMessageEscKeydown);
+  };
+
+  const hideMessage = () => {
+    const existingMessage = document.querySelector('.success, .error');
+    if (existingMessage) {
+      existingMessage.remove();
+    }
+  };
+
+  const toggleSubmitButton = (isDisabled) => {
+    if (submitButton) {
+      submitButton.disabled = isDisabled;
+      submitButton.textContent = isDisabled ? 'Публикую...' : 'Опубликовать';
+    }
+  };
+
+  const resetForm = () => {
+    form.reset();
+    pristine.reset();
+
+    const preview = document.querySelector('.img-upload__preview img');
+    if (preview) {
+      preview.src = '';
+      preview.style.transform = '';
+      preview.style.filter = '';
+    }
+
+    const effectNone = document.querySelector('#effect-none');
+    if (effectNone) {
+      effectNone.checked = true;
+    }
+
+    if (effectLevel) {
+      effectLevel.classList.add('hidden');
+    }
+
+    const scaleControl = document.querySelector('.scale__control--value');
+    if (scaleControl) {
+      scaleControl.value = '100%';
+    }
+  };
+
+  const onFormSubmit = async (evt) => {
+    evt.preventDefault();
+
+    const isValid = pristine.validate();
+
+    if (!isValid) {
+      hashtagInput.focus();
+      return;
+    }
+
+    try {
+      toggleSubmitButton(true);
+
+      const formData = new FormData(form);
+
+      await sendData(formData);
+
+      showMessage('success', 'Изображение успешно загружено!');
+
+      closeForm();
+
+    } catch (error) {
+      console.error('Ошибка при отправке формы:', error);
+      showMessage('error', 'Ошибка загрузки файла. Попробуйте ещё раз.');
+
+      toggleSubmitButton(false);
+    }
+  };
+
   const onFileInputChange = () => {
     openForm();
   };
@@ -93,17 +207,14 @@ const formModule = (function() {
     document.body.classList.remove('modal-open');
     document.removeEventListener('keydown', onDocumentKeydown);
     resetForm();
-  };
-
-  const resetForm = () => {
-    form.reset();
-    pristine.reset();
-    fileInput.value = '';
+    toggleSubmitButton(false);
   };
 
   const onDocumentKeydown = (evt) => {
     if (evt.key === 'Escape') {
-      if (document.activeElement === hashtagInput || document.activeElement === commentInput) {
+      if (document.activeElement === hashtagInput ||
+          document.activeElement === commentInput ||
+          document.querySelector('.success, .error')) {
         return;
       }
       evt.preventDefault();
@@ -111,19 +222,9 @@ const formModule = (function() {
     }
   };
 
-  const onFormSubmit = (evt) => {
-    evt.preventDefault();
-
-    const isValid = pristine.validate();
-
-    if (!isValid) {
-      hashtagInput.focus();
-    } else {
-      form.submit();
-    }
-  };
-
   const init = () => {
+    if (!form) return;
+
     fileInput.addEventListener('change', onFileInputChange);
     cancelButton.addEventListener('click', closeForm);
     form.addEventListener('submit', onFormSubmit);
@@ -135,14 +236,18 @@ const formModule = (function() {
     commentInput.addEventListener('input', () => {
       pristine.validate(commentInput);
     });
+
+    const resetButton = form.querySelector('.img-upload__cancel, [type="reset"]');
+    if (resetButton && resetButton !== cancelButton) {
+      resetButton.addEventListener('click', resetForm);
+    }
   };
 
   return {
     init,
-    closeForm
+    closeForm,
+    resetForm
   };
 })();
 
-document.addEventListener('DOMContentLoaded', () => {
-  formModule.init();
-});
+export default formModule;
