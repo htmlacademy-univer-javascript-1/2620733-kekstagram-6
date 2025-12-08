@@ -1,43 +1,56 @@
 import { openBigPicture } from './big-picture.js';
-import { loadAndRenderPictures, allPhotos } from './pictures.js';
-import { initFormHandlers } from './form-validation.js';
+import { loadAndRenderPictures } from './pictures.js';
+import formModule from './form-validation.js';
+import imageEditor from './image-editor.js';
+
+let allPhotos = [];
 
 const initThumbnailHandlers = () => {
-    const picturesContainer = document.querySelector('.pictures');
+  const picturesContainer = document.querySelector('.pictures');
 
-    if (!picturesContainer) return;
+  if (!picturesContainer) return;
 
-    picturesContainer.addEventListener('click', (evt) => {
-        const pictureElement = evt.target.closest('.picture');
+  picturesContainer.addEventListener('click', (evt) => {
+    const pictureElement = evt.target.closest('.picture');
 
-        if (pictureElement) {
-            evt.preventDefault();
+    if (pictureElement) {
+      evt.preventDefault();
 
-            const pictureId = parseInt(pictureElement.dataset.id, 10);
-            const pictureData = allPhotos.find(photo => photo.id === pictureId);
+      const pictureElements = picturesContainer.querySelectorAll('.picture');
+      const index = Array.from(pictureElements).indexOf(pictureElement);
 
-            if (pictureData) {
-                openBigPicture(pictureData);
-            }
-        }
-    });
+      if (index !== -1 && allPhotos[index]) {
+        openBigPicture(allPhotos[index]);
+      }
+    }
+  });
 };
 
 const initApp = async () => {
-    try {
-        await loadAndRenderPictures();
+  try {
+    console.log('Инициализация приложения...');
 
-        initThumbnailHandlers();
+    allPhotos = await loadAndRenderPictures() || [];
 
-        if (typeof initFormHandlers === 'function') {
-            initFormHandlers();
-        }
+    initThumbnailHandlers();
 
-        console.log('Приложение инициализировано');
+    formModule.init();
 
-    } catch (error) {
-        console.error('Ошибка инициализации приложения:', error);
+    if (typeof imageEditor.init === 'function') {
+      imageEditor.init();
     }
+
+    console.log('Приложение успешно инициализировано');
+
+  } catch (error) {
+    console.error('Ошибка при инициализации приложения:', error);
+  }
 };
 
-document.addEventListener('DOMContentLoaded', initApp);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
+
+export { allPhotos };
