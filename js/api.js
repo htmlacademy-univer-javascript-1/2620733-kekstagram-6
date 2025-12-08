@@ -1,3 +1,4 @@
+'use strict';
 
 const SERVER_URL = 'https://31.javascript.htmlacademy.pro/kekstagram';
 const GET_DATA_URL = `${SERVER_URL}/data`;
@@ -6,7 +7,7 @@ const getData = async () => {
   try {
     const response = await fetch(GET_DATA_URL);
 
-    if (response.ok !== true) {
+    if (!response.ok) {
       throw new Error(`Ошибка сервера: ${response.status}`);
     }
 
@@ -24,7 +25,7 @@ const sendData = async (formData) => {
       body: formData,
     });
 
-    if (response.ok !== true) {
+    if (!response.ok) {
       throw new Error(`Ошибка сервера: ${response.status}`);
     }
 
