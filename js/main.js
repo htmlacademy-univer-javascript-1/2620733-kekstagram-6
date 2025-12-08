@@ -1,28 +1,34 @@
-const SHOW_TIME = 5000;
+import { getData } from './api.js';
+import { showAlert } from './util.js';
+import thumbnailRenderer from './big-picture.js';
+import fullscreenViewer from './slider.js';
+import { initUploadForm } from './form-validation.js';
+import { initFilter } from './filters.js';
 
-import {loadData} from './api.js';
-import {showAlert} from './util.js';
-import {renderPictures} from './pictures.js';
-import './slider.js';
-import './form-validation.js';
-import {initEffects} from './image-loader.js';
-import './filters.js';
-import './photos.js';
-import './comments.js';
+initUploadForm();
 
-initEffects();
-let photos = [];
+getData()
+  .then((photos) => {
+    thumbnailRenderer.renderThumbnails(photos);
 
-const onSuccess = (data) => {
-  photos = data.slice();
-  renderPictures(photos);
-  document.querySelector('.img-filters').classList.remove('img-filters--inactive');
-};
+    initFilter(photos);
 
-const onFail = () => {
-  showAlert('Ошибка загрузки', SHOW_TIME);
-};
+    document.querySelector('.pictures').addEventListener('click', (evt) => {
+      const thumbnail = evt.target.closest('.picture');
+      if (thumbnail) {
+        evt.preventDefault();
+        const photoId = parseInt(thumbnail.dataset.photoId, 10);
 
-loadData(onSuccess, onFail);
+        const photoData = photos.find((photo) => photo.id === photoId);
 
-export {photos};
+        if (photoData) {
+          fullscreenViewer.openFullscreen(photoData);
+        }
+      }
+    });
+
+    fullscreenViewer.init();
+  })
+  .catch((err) => {
+    showAlert(err.message);
+  });
