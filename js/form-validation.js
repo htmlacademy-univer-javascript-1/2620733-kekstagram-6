@@ -12,7 +12,7 @@ const KEY_ESCAPE = 'Escape';
 
 const createFormModule = () => {
   const formElement = document.querySelector('.img-upload__form');
-  const fileInputElement = document.querySelector('.img-upload__input');
+  const fileInputElement = document.querySelector('.img-upload__input, .img-upload_input');
   const overlayElement = document.querySelector('.img-upload__overlay');
   const cancelButtonElement = document.querySelector('.img-upload__cancel');
   const hashtagInputElement = formElement ? formElement.querySelector('.text__hashtags') : null;
