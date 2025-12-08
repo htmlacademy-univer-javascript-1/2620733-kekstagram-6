@@ -203,7 +203,10 @@ const createFormModule = () => {
   };
 
   const showMessage = (type, text) => {
-    hideMessage();
+    const existingMessage = document.querySelector('.success, .error');
+    if (existingMessage) {
+      existingMessage.remove();
+    }
 
     const template = document.querySelector(`#${type}`);
     if (!template || !template.content) {
@@ -249,13 +252,6 @@ const createFormModule = () => {
     });
 
     document.addEventListener('keydown', onMessageEscKeydown);
-  };
-
-  const hideMessage = () => {
-    const existingMessage = document.querySelector('.success, .error');
-    if (existingMessage) {
-      existingMessage.remove();
-    }
   };
 
   const toggleSubmitButton = (isDisabled) => {
@@ -326,6 +322,7 @@ const createFormModule = () => {
     }
 
     addPristineValidators();
+
     initImageLoader();
 
     if (typeof imageEditor?.init === 'function') {
@@ -387,7 +384,11 @@ const createFormModule = () => {
     }
 
     document.removeEventListener('keydown', onDocumentKeydown);
-    hideMessage();
+
+    const existingMessage = document.querySelector('.success, .error');
+    if (existingMessage) {
+      existingMessage.remove();
+    }
   };
 
   return {
