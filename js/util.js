@@ -1,92 +1,58 @@
-'use strict';
+const DELAY = 500;
 
-const getRandomInt = (min, max) => {
-  if (min > max) {
-    [min, max] = [max, min];
-  }
+const randomInteger = (min, max) => {
+  const lower = Math.ceil(Math.min(min, max));
+  const upper = Math.floor(Math.max(min, max));
 
-  min = Math.ceil(min);
-  max = Math.floor(max);
-
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  const result = Math.random() * (upper - lower + 1) + lower;
+  return Math.floor(result);
 };
 
-const getUniqueNumbers = (count, min, max) => {
-  if (min > max) {
-    [min, max] = [max, min];
-  }
-
-  const rangeSize = max - min + 1;
-  if (count > rangeSize) {
-    count = rangeSize;
-  }
-
-  const numbers = new Set();
-
-  while (numbers.size < count) {
-    const num = getRandomInt(min, max);
-    numbers.add(num);
-  }
-
-  return Array.from(numbers);
+const checkLenght = (inputString, maxLenght) => inputString.length <= maxLenght;
+const Keys = {
+  ESCAPE: 'Escape',
+  ESC: 'Esc'
 };
 
-const debounce = (callback, timeoutDelay = 500) => {
-  let timeoutId;
+const isEscapeKey = (evt) => evt.key === Keys.ESCAPE || evt.key === Keys.ESC;
 
-  return (...rest) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => callback.apply(this, rest), timeoutDelay);
+const closeOnEscKeyDown = (evt, cb) => {
+  if (isEscapeKey(evt)) {
+    cb();
+  }
+};
+
+const debounce = (cb) => {
+  let lastTimeOut = null;
+
+  return (...args) =>{
+    if (lastTimeOut){
+      window.clearTimeout(lastTimeOut);
+    }
+    lastTimeOut = window.setTimeout(()=>{
+      cb(...args);
+    }, DELAY);
   };
 };
 
-const shuffleArray = (array) => {
-  const shuffled = [...array];
+const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
+const showAlert = (message, alertShowTime) => {
+  const alertContainer = document.createElement('div');
+  alertContainer.style.zIndex = '100';
+  alertContainer.style.position = 'absolute';
+  alertContainer.style.left = '0';
+  alertContainer.style.top = '0';
+  alertContainer.style.right = '0';
+  alertContainer.style.padding = '10px 3px';
+  alertContainer.style.fontSize = '30px';
+  alertContainer.style.textAlign = 'center';
+  alertContainer.style.backgroundColor = '#f5cc00';
 
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
+  alertContainer.textContent = message;
 
-  return shuffled;
+  document.body.append(alertContainer);
+
+  setTimeout(() => alertContainer.remove(), alertShowTime);
 };
 
-const getRandomElements = (array, count) => {
-  if (!Array.isArray(array) || array.length === 0) {
-    return [];
-  }
-
-  if (count <= 0) {
-    return [];
-  }
-
-  if (array.length <= count) {
-    return shuffleArray(array);
-  }
-
-  const indices = getUniqueNumbers(count, 0, array.length - 1);
-  return indices.map((index) => array[index]);
-};
-
-const isEscapeKey = (evt) => {
-  return evt.key === 'Escape' || evt.key === 'Esc' || evt.keyCode === 27;
-};
-
-const isEnterKey = (evt) => {
-  return evt.key === 'Enter' || evt.keyCode === 13;
-};
-
-const isOutsideClick = (element, evt) => {
-  return !element.contains(evt.target);
-};
-
-export {
-  getRandomInt,
-  getUniqueNumbers,
-  debounce,
-  shuffleArray,
-  getRandomElements,
-  isEscapeKey,
-  isEnterKey,
-  isOutsideClick
-};
+export {randomInteger, closeOnEscKeyDown, isEscapeKey, showAlert, checkLenght, debounce, shuffleArray};
