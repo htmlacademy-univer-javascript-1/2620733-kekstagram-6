@@ -1,3 +1,5 @@
+'use strict';
+
 const SCALE_STEP = 25;
 const SCALE_MIN = 25;
 const SCALE_MAX = 100;
@@ -76,7 +78,6 @@ const createImageEditor = () => {
 
   const initSlider = () => {
     if (!effectLevelSliderElement || !isNoUiSliderAvailable()) {
-      console.error('Слайдер эффектов не доступен');
       return;
     }
 
@@ -88,25 +89,14 @@ const createImageEditor = () => {
         },
         start: 100,
         step: 1,
-        connect: 'lower',
-        format: {
-          to: (value) => {
-            if (Number.isInteger(value)) {
-              return value.toFixed(0);
-            }
-            return value.toFixed(1);
-          },
-          from: (value) => {
-            return parseFloat(value);
-          }
-        }
+        connect: 'lower'
       });
 
       if (effectLevelContainerElement) {
         effectLevelContainerElement.classList.add('hidden');
       }
     } catch (error) {
-      console.error('Ошибка инициализации слайдера:', error);
+      return;
     }
   };
 
@@ -153,7 +143,7 @@ const createImageEditor = () => {
     }
 
     if (effectLevelValueElement) {
-      effectLevelValueElement.value = String(value);
+      effectLevelValueElement.value = value.toString();
     }
   };
 
@@ -167,28 +157,23 @@ const createImageEditor = () => {
   };
 
   const onEffectChange = (evt) => {
-    const target = evt.target;
-
-    if (target.type !== 'radio') {
+    if (evt.target.type !== 'radio') {
       return;
     }
 
-    const effectName = target.value;
+    const effectName = evt.target.value;
 
     if (!EFFECTS[effectName]) {
-      console.warn(`Неизвестный эффект: ${effectName}`);
       return;
     }
 
     currentEffect = effectName;
-
     updateSlider(currentEffect);
     applyEffect(currentEffect, EFFECTS[currentEffect].start);
   };
 
   const scaleImage = (value) => {
     if (value < SCALE_MIN || value > SCALE_MAX) {
-      console.warn(`Недопустимое значение масштаба: ${value}`);
       return;
     }
 
@@ -199,24 +184,20 @@ const createImageEditor = () => {
     }
 
     if (imagePreviewElement) {
-      const scaleValue = value / 100;
-      imagePreviewElement.style.transform = `scale(${scaleValue})`;
+      imagePreviewElement.style.transform = `scale(${value / 100})`;
     }
   };
 
   const onScaleSmaller = () => {
-    const newScale = Math.max(currentScale - SCALE_STEP, SCALE_MIN);
-    scaleImage(newScale);
+    scaleImage(Math.max(currentScale - SCALE_STEP, SCALE_MIN));
   };
 
   const onScaleBigger = () => {
-    const newScale = Math.min(currentScale + SCALE_STEP, SCALE_MAX);
-    scaleImage(newScale);
+    scaleImage(Math.min(currentScale + SCALE_STEP, SCALE_MAX));
   };
 
   const resetEditor = () => {
     scaleImage(SCALE_DEFAULT);
-
     currentEffect = DEFAULT_EFFECT;
 
     if (effectsListElement) {
@@ -225,7 +206,9 @@ const createImageEditor = () => {
         noneEffect.checked = true;
       }
     }
+
     applyEffect(DEFAULT_EFFECT, '');
+
     if (effectLevelContainerElement) {
       effectLevelContainerElement.classList.add('hidden');
     }
@@ -247,15 +230,10 @@ const createImageEditor = () => {
     if (effectsListElement) {
       effectsListElement.removeEventListener('change', onEffectChange);
     }
-
-    if (effectLevelSliderElement) {
-      effectLevelSliderElement.noUiSlider.off('update', onSliderUpdate);
-    }
   };
 
   const init = () => {
     if (!imagePreviewElement) {
-      console.error('Элемент превью изображения не найден');
       return;
     }
 
@@ -279,7 +257,7 @@ const createImageEditor = () => {
 
       resetEditor();
     } catch (error) {
-      console.error('Ошибка инициализации редактора изображений:', error);
+      return;
     }
   };
 
