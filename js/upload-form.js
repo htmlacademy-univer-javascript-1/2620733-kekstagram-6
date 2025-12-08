@@ -1,4 +1,4 @@
-import { resetScale } from './slider.js';
+import { resetScale } from './scale.js';
 import { resetEffects } from './effect.js';
 import { sendData } from './api.js';
 import { showSuccessMessage, showErrorMessage } from './message.js';
