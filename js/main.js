@@ -1,35 +1,39 @@
 import { openBigPicture } from './big-picture.js';
-import { loadAndRenderPictures } from './pictures.js';
+import { loadAndRenderPictures, allPhotos } from './pictures.js';
 import { initFormHandlers } from './form-validation.js';
 
-let picturesData = [];
-
 const initThumbnailHandlers = () => {
-    const thumbnails = document.querySelectorAll('.picture');
+    const picturesContainer = document.querySelector('.pictures');
 
-    thumbnails.forEach((thumbnail, index) => {
-        thumbnail.replaceWith(thumbnail.cloneNode(true));
-        const newThumbnail = thumbnails[index];
+    if (!picturesContainer) return;
 
-        newThumbnail.addEventListener('click', (evt) => {
+    picturesContainer.addEventListener('click', (evt) => {
+        const pictureElement = evt.target.closest('.picture');
+
+        if (pictureElement) {
             evt.preventDefault();
 
-            if (picturesData && picturesData[index]) {
-                openBigPicture(picturesData[index]);
+            const pictureId = parseInt(pictureElement.dataset.id, 10);
+            const pictureData = allPhotos.find(photo => photo.id === pictureId);
+
+            if (pictureData) {
+                openBigPicture(pictureData);
             }
-        });
+        }
     });
 };
 
 const initApp = async () => {
     try {
-        picturesData = await loadAndRenderPictures();
+        await loadAndRenderPictures();
+
         initThumbnailHandlers();
+
         if (typeof initFormHandlers === 'function') {
             initFormHandlers();
         }
 
-        console.log('Приложение инициализировано. Загружено фотографий:', picturesData.length);
+        console.log('Приложение инициализировано');
 
     } catch (error) {
         console.error('Ошибка инициализации приложения:', error);
@@ -37,5 +41,3 @@ const initApp = async () => {
 };
 
 document.addEventListener('DOMContentLoaded', initApp);
-
-export { picturesData };

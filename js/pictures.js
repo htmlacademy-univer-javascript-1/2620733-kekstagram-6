@@ -1,4 +1,7 @@
 import { getData } from './api.js';
+import { initFilters } from './filters.js';
+
+let allPhotos = [];
 
 export function renderPictures(picturesData) {
     const pictureTemplate = document.getElementById('picture').content;
@@ -14,6 +17,8 @@ export function renderPictures(picturesData) {
         imgElement.alt = picture.description;
         likesElement.textContent = picture.likes;
         commentsElement.textContent = picture.comments.length;
+
+        pictureElement.querySelector('.picture').dataset.id = picture.id;
 
         fragment.appendChild(pictureElement);
     });
@@ -34,11 +39,13 @@ export const loadAndRenderPictures = async () => {
             picturesContainer.innerHTML = '<div class="loading">Загрузка фотографий...</div>';
         }
 
-        const picturesData = await getData();
+        allPhotos = await getData();
 
-        renderPictures(picturesData);
+        renderPictures(allPhotos);
 
-        return picturesData;
+        initFilters(allPhotos, renderPictures);
+
+        return allPhotos;
 
     } catch (error) {
         const picturesContainer = document.querySelector('.pictures');
@@ -61,4 +68,4 @@ export const loadAndRenderPictures = async () => {
     }
 };
 
-export { renderPictures, loadAndRenderPictures };
+export { allPhotos };
