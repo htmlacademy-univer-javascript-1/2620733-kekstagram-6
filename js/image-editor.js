@@ -1,103 +1,126 @@
-const imageEditor = (function() {
-  const scaleControlSmaller = document.querySelector('.scale__control--smaller');
-  const scaleControlBigger = document.querySelector('.scale__control--bigger');
-  const scaleControlValue = document.querySelector('.scale__control--value');
-  const imagePreview = document.querySelector('.img-upload__preview img');
+const SCALE_STEP = 25;
+const SCALE_MIN = 25;
+const SCALE_MAX = 100;
+const SCALE_DEFAULT = 100;
+const DEFAULT_EFFECT = 'none';
+const KEY_ESCAPE = 'Escape';
 
-  const effectsList = document.querySelector('.effects__list');
-  const effectLevelSlider = document.querySelector('.effect-level__slider');
-  const effectLevelValue = document.querySelector('.effect-level__value');
-  const effectLevelContainer = document.querySelector('.img-upload__effect-level');
+const EFFECTS = Object.freeze({
+  none: {
+    filter: 'none',
+    unit: '',
+    min: 0,
+    max: 100,
+    step: 1,
+    start: 100
+  },
+  chrome: {
+    filter: 'grayscale',
+    unit: '',
+    min: 0,
+    max: 1,
+    step: 0.1,
+    start: 1
+  },
+  sepia: {
+    filter: 'sepia',
+    unit: '',
+    min: 0,
+    max: 1,
+    step: 0.1,
+    start: 1
+  },
+  marvin: {
+    filter: 'invert',
+    unit: '%',
+    min: 0,
+    max: 100,
+    step: 1,
+    start: 100
+  },
+  phobos: {
+    filter: 'blur',
+    unit: 'px',
+    min: 0,
+    max: 3,
+    step: 0.1,
+    start: 3
+  },
+  heat: {
+    filter: 'brightness',
+    unit: '',
+    min: 1,
+    max: 3,
+    step: 0.1,
+    start: 3
+  }
+});
 
-  const SCALE_STEP = 25;
-  const SCALE_MIN = 25;
-  const SCALE_MAX = 100;
-  const SCALE_DEFAULT = 100;
+const createImageEditor = () => {
+  const scaleControlSmallerElement = document.querySelector('.scale__control--smaller');
+  const scaleControlBiggerElement = document.querySelector('.scale__control--bigger');
+  const scaleControlValueElement = document.querySelector('.scale__control--value');
+  const imagePreviewElement = document.querySelector('.img-upload__preview img');
+
+  const effectsListElement = document.querySelector('.effects__list');
+  const effectLevelSliderElement = document.querySelector('.effect-level__slider');
+  const effectLevelValueElement = document.querySelector('.effect-level__value');
+  const effectLevelContainerElement = document.querySelector('.img-upload__effect-level');
 
   let currentScale = SCALE_DEFAULT;
-  let currentEffect = 'none';
+  let currentEffect = DEFAULT_EFFECT;
 
-
-  const effects = {
-    none: {
-      filter: 'none',
-      unit: '',
-      min: 0,
-      max: 100,
-      step: 1,
-      start: 100
-    },
-    chrome: {
-      filter: 'grayscale',
-      unit: '',
-      min: 0,
-      max: 1,
-      step: 0.1,
-      start: 1
-    },
-    sepia: {
-      filter: 'sepia',
-      unit: '',
-      min: 0,
-      max: 1,
-      step: 0.1,
-      start: 1
-    },
-    marvin: {
-      filter: 'invert',
-      unit: '%',
-      min: 0,
-      max: 100,
-      step: 1,
-      start: 100
-    },
-    phobos: {
-      filter: 'blur',
-      unit: 'px',
-      min: 0,
-      max: 3,
-      step: 0.1,
-      start: 3
-    },
-    heat: {
-      filter: 'brightness',
-      unit: '',
-      min: 1,
-      max: 3,
-      step: 0.1,
-      start: 3
-    }
+  const isNoUiSliderAvailable = () => {
+    return typeof window.noUiSlider !== 'undefined';
   };
 
   const initSlider = () => {
-    noUiSlider.create(effectLevelSlider, {
-      range: {
-        min: 0,
-        max: 100
-      },
-      start: 100,
-      step: 1,
-      connect: 'lower',
-      format: {
-        to: function (value) {
-          if (Number.isInteger(value)) {
-            return value.toFixed(0);
-          }
-          return value.toFixed(1);
-        },
-        from: function (value) {
-          return parseFloat(value);
-        }
-      }
-    });
+    if (!effectLevelSliderElement || !isNoUiSliderAvailable()) {
+      console.error('Слайдер эффектов не доступен');
+      return;
+    }
 
-    effectLevelContainer.classList.add('hidden');
+    try {
+      window.noUiSlider.create(effectLevelSliderElement, {
+        range: {
+          min: 0,
+          max: 100
+        },
+        start: 100,
+        step: 1,
+        connect: 'lower',
+        format: {
+          to: (value) => {
+            if (Number.isInteger(value)) {
+              return value.toFixed(0);
+            }
+            return value.toFixed(1);
+          },
+          from: (value) => {
+            return parseFloat(value);
+          }
+        }
+      });
+
+      if (effectLevelContainerElement) {
+        effectLevelContainerElement.classList.add('hidden');
+      }
+    } catch (error) {
+      console.error('Ошибка инициализации слайдера:', error);
+    }
   };
 
   const updateSlider = (effect) => {
-    const effectConfig = effects[effect];
+    if (!effectLevelSliderElement || !effectLevelSliderElement.noUiSlider) {
+      return;
+    }
 
-    effectLevelSlider.noUiSlider.updateOptions({
+    const effectConfig = EFFECTS[effect];
+    if (!effectConfig) {
+      return;
+    }
+
+    effectLevelSliderElement.noUiSlider.updateOptions({
       range: {
         min: effectConfig.min,
         max: effectConfig.max
@@ -108,37 +131,77 @@ const imageEditor = (function() {
   };
 
   const applyEffect = (effect, value) => {
-    const effectConfig = effects[effect];
-
-    if (effect === 'none') {
-      imagePreview.style.filter = 'none';
-      effectLevelContainer.classList.add('hidden');
-    } else {
-      imagePreview.style.filter = `${effectConfig.filter}(${value}${effectConfig.unit})`;
-      effectLevelContainer.classList.remove('hidden');
+    if (!imagePreviewElement) {
+      return;
     }
 
-    effectLevelValue.value = value;
+    const effectConfig = EFFECTS[effect];
+    if (!effectConfig) {
+      return;
+    }
+
+    if (effect === DEFAULT_EFFECT) {
+      imagePreviewElement.style.filter = 'none';
+      if (effectLevelContainerElement) {
+        effectLevelContainerElement.classList.add('hidden');
+      }
+    } else {
+      imagePreviewElement.style.filter = `${effectConfig.filter}(${value}${effectConfig.unit})`;
+      if (effectLevelContainerElement) {
+        effectLevelContainerElement.classList.remove('hidden');
+      }
+    }
+
+    if (effectLevelValueElement) {
+      effectLevelValueElement.value = String(value);
+    }
   };
 
   const onSliderUpdate = () => {
-    const value = effectLevelSlider.noUiSlider.get();
+    if (!effectLevelSliderElement || !effectLevelSliderElement.noUiSlider) {
+      return;
+    }
+
+    const value = effectLevelSliderElement.noUiSlider.get();
     applyEffect(currentEffect, value);
   };
 
   const onEffectChange = (evt) => {
-    if (evt.target.matches('input[type="radio"]')) {
-      currentEffect = evt.target.value;
+    const target = evt.target;
 
-      updateSlider(currentEffect);
-      applyEffect(currentEffect, effects[currentEffect].start);
+    if (target.type !== 'radio') {
+      return;
     }
+
+    const effectName = target.value;
+
+    if (!EFFECTS[effectName]) {
+      console.warn(`Неизвестный эффект: ${effectName}`);
+      return;
+    }
+
+    currentEffect = effectName;
+
+    updateSlider(currentEffect);
+    applyEffect(currentEffect, EFFECTS[currentEffect].start);
   };
 
   const scaleImage = (value) => {
+    if (value < SCALE_MIN || value > SCALE_MAX) {
+      console.warn(`Недопустимое значение масштаба: ${value}`);
+      return;
+    }
+
     currentScale = value;
-    scaleControlValue.value = `${value}%`;
-    imagePreview.style.transform = `scale(${value / 100})`;
+
+    if (scaleControlValueElement) {
+      scaleControlValueElement.value = `${value}%`;
+    }
+
+    if (imagePreviewElement) {
+      const scaleValue = value / 100;
+      imagePreviewElement.style.transform = `scale(${scaleValue})`;
+    }
   };
 
   const onScaleSmaller = () => {
@@ -154,45 +217,79 @@ const imageEditor = (function() {
   const resetEditor = () => {
     scaleImage(SCALE_DEFAULT);
 
-    currentEffect = 'none';
-    const noneEffect = effectsList.querySelector('#effect-none');
-    if (noneEffect) {
-      noneEffect.checked = true;
+    currentEffect = DEFAULT_EFFECT;
+
+    if (effectsListElement) {
+      const noneEffect = effectsListElement.querySelector('#effect-none');
+      if (noneEffect) {
+        noneEffect.checked = true;
+      }
+    }
+    applyEffect(DEFAULT_EFFECT, '');
+    if (effectLevelContainerElement) {
+      effectLevelContainerElement.classList.add('hidden');
+    }
+  };
+
+  const destroy = () => {
+    if (effectLevelSliderElement && effectLevelSliderElement.noUiSlider) {
+      effectLevelSliderElement.noUiSlider.destroy();
     }
 
-    applyEffect('none', '');
-    effectLevelContainer.classList.add('hidden');
+    if (scaleControlSmallerElement) {
+      scaleControlSmallerElement.removeEventListener('click', onScaleSmaller);
+    }
+
+    if (scaleControlBiggerElement) {
+      scaleControlBiggerElement.removeEventListener('click', onScaleBigger);
+    }
+
+    if (effectsListElement) {
+      effectsListElement.removeEventListener('change', onEffectChange);
+    }
+
+    if (effectLevelSliderElement) {
+      effectLevelSliderElement.noUiSlider.off('update', onSliderUpdate);
+    }
   };
 
   const init = () => {
-    if (effectLevelSlider) {
-      initSlider();
-      effectLevelSlider.noUiSlider.on('update', onSliderUpdate);
+    if (!imagePreviewElement) {
+      console.error('Элемент превью изображения не найден');
+      return;
     }
 
-    if (scaleControlSmaller) {
-      scaleControlSmaller.addEventListener('click', onScaleSmaller);
-    }
+    try {
+      if (effectLevelSliderElement) {
+        initSlider();
+        effectLevelSliderElement.noUiSlider.on('update', onSliderUpdate);
+      }
 
-    if (scaleControlBigger) {
-      scaleControlBigger.addEventListener('click', onScaleBigger);
-    }
+      if (scaleControlSmallerElement) {
+        scaleControlSmallerElement.addEventListener('click', onScaleSmaller);
+      }
 
-    if (effectsList) {
-      effectsList.addEventListener('change', onEffectChange);
-    }
+      if (scaleControlBiggerElement) {
+        scaleControlBiggerElement.addEventListener('click', onScaleBigger);
+      }
 
-    resetEditor();
+      if (effectsListElement) {
+        effectsListElement.addEventListener('change', onEffectChange);
+      }
+
+      resetEditor();
+    } catch (error) {
+      console.error('Ошибка инициализации редактора изображений:', error);
+    }
   };
 
   return {
     init,
-    reset: resetEditor
+    reset: resetEditor,
+    destroy
   };
-})();
+};
+
+const imageEditor = createImageEditor();
 
 export default imageEditor;
-
-document.addEventListener('DOMContentLoaded', () => {
-  imageEditor.init();
-});
