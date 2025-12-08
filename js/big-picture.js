@@ -1,5 +1,6 @@
-const COMMENTS_PER_PORTION = 5;
+'use strict';
 
+const COMMENTS_PER_PORTION = 5;
 const KEY_ESCAPE = 'Escape';
 
 const bodyElement = document.querySelector('body');
@@ -31,8 +32,7 @@ const createCommentElement = (comment) => {
   commentText.classList.add('social__text');
   commentText.textContent = comment.message;
 
-  commentElement.appendChild(avatarImage);
-  commentElement.appendChild(commentText);
+  commentElement.append(avatarImage, commentText);
 
   return commentElement;
 };
@@ -46,18 +46,23 @@ const renderCommentsPortion = () => {
 
   commentsToShow.forEach((comment) => {
     const commentElement = createCommentElement(comment);
-    fragment.appendChild(commentElement);
+    fragment.append(commentElement);
   });
 
-  socialCommentsElement.appendChild(fragment);
+  socialCommentsElement.append(fragment);
   commentsShown += commentsToShow.length;
 
   const commentCountText = `${commentsShown} из ${currentComments.length} комментариев`;
-  const firstChild = commentCountBlockElement.firstChild;
-  if (firstChild && firstChild.nodeType === Node.TEXT_NODE) {
-    firstChild.textContent = commentCountText;
+
+  const textNode = commentCountBlockElement.firstChild;
+  if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+    textNode.textContent = commentCountText;
   } else {
-    commentCountBlockElement.textContent = commentCountText;
+    const spanElement = document.createElement('span');
+    spanElement.className = 'social__comment-count-text';
+    spanElement.textContent = commentCountText;
+    commentCountBlockElement.innerHTML = '';
+    commentCountBlockElement.append(spanElement);
   }
 
   if (commentsShown >= currentComments.length) {
@@ -70,9 +75,7 @@ const renderCommentsPortion = () => {
 const resetComments = () => {
   currentComments = [];
   commentsShown = 0;
-  while (socialCommentsElement.firstChild) {
-    socialCommentsElement.removeChild(socialCommentsElement.firstChild);
-  }
+  socialCommentsElement.innerHTML = '';
 };
 
 const onDocumentKeydown = (evt) => {
@@ -106,7 +109,7 @@ const openBigPicture = (pictureData) => {
   commentsCountElement.textContent = String(pictureData.comments.length);
   socialCaptionElement.textContent = pictureData.description;
 
-  currentComments = pictureData.comments.slice();
+  currentComments = [...pictureData.comments];
 
   commentCountBlockElement.classList.remove('hidden');
   commentsLoaderElement.classList.remove('hidden');
