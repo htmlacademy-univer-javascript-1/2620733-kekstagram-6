@@ -1,39 +1,26 @@
-'use strict';
-
-const SERVER_URL = 'https://31.javascript.htmlacademy.pro/kekstagram';
-const GET_DATA_URL = `${SERVER_URL}/data`;
-
-const getData = async () => {
-  try {
-    const response = await fetch(GET_DATA_URL);
-
-    if (!response.ok) {
-      throw new Error(`Ошибка сервера: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    const errorMessage = `Не удалось загрузить данные: ${error.message}`;
-    throw new Error(errorMessage);
-  }
+const URLS = {
+  'GET': 'https://29.javascript.htmlacademy.pro/kekstagram/data',
+  'POST': 'https://29.javascript.htmlacademy.pro/kekstagram'
 };
 
-const sendData = async (formData) => {
-  try {
-    const response = await fetch(SERVER_URL, {
-      method: 'POST',
-      body: formData,
+const sendRequest = (onSuccess, onError, method, body) => {
+  fetch(
+    URLS[method],
+    {
+      method: method,
+      body: body,
+    },
+  )
+    .then((responce) => responce.json())
+    .then((data) => {
+      onSuccess(data);
+    })
+    .catch((err) => {
+      onError(err);
     });
-
-    if (!response.ok) {
-      throw new Error(`Ошибка сервера: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    const errorMessage = `Не удалось отправить данные: ${error.message}`;
-    throw new Error(errorMessage);
-  }
 };
+const loadData = (onSuccess, onError, method = 'GET') => sendRequest(onSuccess, onError, method);
 
-export { getData, sendData };
+const uploadData = (onSuccess, onError, method = 'POST', body) => sendRequest(onSuccess, onError, method, body);
+
+export {loadData, uploadData};
