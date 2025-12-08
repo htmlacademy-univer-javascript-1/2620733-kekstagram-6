@@ -1,5 +1,5 @@
 import { debounce } from './util.js';
-import thumbnailRenderer from './big-picture.js';
+import thumbnailRenderer from './thumbnail-renderer.js';
 
 const PICTURES_COUNT = 10;
 const Filter = {

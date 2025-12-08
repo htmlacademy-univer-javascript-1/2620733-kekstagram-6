@@ -1,8 +1,8 @@
 import { getData } from './api.js';
 import { showAlert } from './util.js';
-import thumbnailRenderer from './big-picture.js';
-import fullscreenViewer from './slider.js';
-import { initUploadForm } from './form-validation.js';
+import thumbnailRenderer from './thumbnail-renderer.js';
+import fullscreenViewer from './fullscreen-viewer.js';
+import { initUploadForm } from './upload-form.js';
 import { initFilter } from './filters.js';
 
 initUploadForm();
