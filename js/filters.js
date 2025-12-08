@@ -1,109 +1,165 @@
+
 import { debounce, getRandomElements } from './util.js';
 
 const FilterType = {
-    DEFAULT: 'default',
-    RANDOM: 'random',
-    DISCUSSED: 'discussed'
+  DEFAULT: 'default',
+  RANDOM: 'random',
+  DISCUSSED: 'discussed'
 };
 
 const RANDOM_PHOTOS_COUNT = 10;
+const DEBOUNCE_DELAY = 500;
+const UPDATE_ANIMATION_DELAY = 300;
+const ACTIVE_BUTTON_CLASS = 'img-filters__button--active';
+const UPDATING_CLASS = 'updating';
+const FILTER_PREFIX = 'filter-';
 
-const filtersContainer = document.querySelector('.img-filters');
-const filterForm = document.querySelector('.img-filters__form');
-const picturesContainer = document.querySelector('.pictures');
+const filtersContainerElement = document.querySelector('.img-filters');
+const filterFormElement = document.querySelector('.img-filters__form');
+const picturesContainerElement = document.querySelector('.pictures');
 
 let currentFilter = FilterType.DEFAULT;
 let allPhotos = [];
+let renderPicturesCallback = null;
 
 const getRandomPhotos = (photos) => {
-    return getRandomElements(photos, RANDOM_PHOTOS_COUNT);
+  return getRandomElements(photos, RANDOM_PHOTOS_COUNT);
 };
 
 const getDiscussedPhotos = (photos) => {
-    return [...photos].sort((a, b) => b.comments.length - a.comments.length);
+  const photosCopy = [...photos];
+  return photosCopy.sort((photoA, photoB) => {
+    const commentsCountA = Array.isArray(photoA.comments) ? photoA.comments.length : 0;
+    const commentsCountB = Array.isArray(photoB.comments) ? photoB.comments.length : 0;
+    return commentsCountB - commentsCountA;
+  });
 };
 
 const applyFilter = (photos, filterType) => {
-    switch (filterType) {
-        case FilterType.RANDOM:
-            return getRandomPhotos(photos);
-        case FilterType.DISCUSSED:
-            return getDiscussedPhotos(photos);
-        case FilterType.DEFAULT:
-        default:
-            return [...photos];
-    }
+  switch (filterType) {
+    case FilterType.RANDOM:
+      return getRandomPhotos(photos);
+    case FilterType.DISCUSSED:
+      return getDiscussedPhotos(photos);
+    case FilterType.DEFAULT:
+      return [...photos];
+    default:
+      return [...photos];
+  }
 };
 
 const showFilters = () => {
-    if (filtersContainer) {
-        filtersContainer.classList.remove('img-filters--inactive');
-    }
+  if (filtersContainerElement) {
+    filtersContainerElement.classList.remove('img-filters--inactive');
+  }
 };
 
 const setActiveFilter = (filterType) => {
-    currentFilter = filterType;
+  currentFilter = filterType;
 
-    const activeButtonClass = 'img-filters__button--active';
-    const buttons = filterForm.querySelectorAll('.img-filters__button');
+  if (!filterFormElement) {
+    return;
+  }
 
-    buttons.forEach((button) => {
-        button.classList.remove(activeButtonClass);
+  const buttons = filterFormElement.querySelectorAll('.img-filters__button');
 
-        if (button.id === `filter-${filterType}`) {
-            button.classList.add(activeButtonClass);
-        }
-    });
+  buttons.forEach((button) => {
+    const isActive = button.id === `${FILTER_PREFIX}${filterType}`;
+
+    if (isActive) {
+      button.classList.add(ACTIVE_BUTTON_CLASS);
+    } else {
+      button.classList.remove(ACTIVE_BUTTON_CLASS);
+    }
+  });
 };
 
-const updateDisplayWithDebounce = debounce((photos, renderFunction) => {
-    updatePhotosDisplay(photos, renderFunction);
-}, 500);
+const updatePhotosDisplay = (photos, callback) => {
+  if (!picturesContainerElement || typeof callback !== 'function') {
+    return;
+  }
 
-const updatePhotosDisplay = (photos, renderFunction) => {
-    if (!picturesContainer || !renderFunction) return;
+  picturesContainerElement.classList.add(UPDATING_CLASS);
 
-    picturesContainer.classList.add('updating');
+  const filteredPhotos = applyFilter(photos, currentFilter);
 
-    const filteredPhotos = applyFilter(photos, currentFilter);
+  const oldPictures = picturesContainerElement.querySelectorAll('.picture');
+  oldPictures.forEach((picture) => {
+    picture.remove();
+  });
 
-    const oldPictures = picturesContainer.querySelectorAll('.picture');
-    oldPictures.forEach((picture) => picture.remove());
+  callback(filteredPhotos);
 
-    renderFunction(filteredPhotos);
-
-    setTimeout(() => {
-        picturesContainer.classList.remove('updating');
-    }, 300);
+  setTimeout(() => {
+    picturesContainerElement.classList.remove(UPDATING_CLASS);
+  }, UPDATE_ANIMATION_DELAY);
 };
+
+const debouncedUpdateDisplay = debounce(() => {
+  if (allPhotos.length > 0 && renderPicturesCallback) {
+    updatePhotosDisplay(allPhotos, renderPicturesCallback);
+  }
+}, DEBOUNCE_DELAY);
 
 const onFilterClick = (evt) => {
-    const button = evt.target.closest('.img-filters__button');
+  const button = evt.target.closest('.img-filters__button');
 
-    if (!button || button.classList.contains('img-filters__button--active')) {
-        return;
-    }
+  if (!button) {
+    return;
+  }
 
-    const filterType = button.id.replace('filter-', '');
+  const isButtonActive = button.classList.contains(ACTIVE_BUTTON_CLASS);
+  if (isButtonActive) {
+    return;
+  }
 
-    setActiveFilter(filterType);
+  const filterId = button.id;
+  if (!filterId.startsWith(FILTER_PREFIX)) {
+    return;
+  }
 
-    updateDisplayWithDebounce(allPhotos, window.renderPicturesCallback);
+  const filterType = filterId.replace(FILTER_PREFIX, '');
+
+  const isValidFilter = Object.values(FilterType).includes(filterType);
+  if (!isValidFilter) {
+    return;
+  }
+
+  setActiveFilter(filterType);
+  debouncedUpdateDisplay();
 };
+
 
 const initFilters = (photos, renderFunction) => {
-    if (!photos || photos.length === 0) return;
+  if (!Array.isArray(photos) || photos.length === 0) {
+    return;
+  }
 
-    allPhotos = photos;
-    window.renderPicturesCallback = renderFunction;
+  if (typeof renderFunction !== 'function') {
+    console.error('renderFunction должна быть функцией');
+    return;
+  }
 
-    showFilters();
+  allPhotos = photos.slice();
+  renderPicturesCallback = renderFunction;
 
-    if (filterForm) {
-        filterForm.addEventListener('click', onFilterClick);
-    }
+  showFilters();
 
-    setActiveFilter(FilterType.DEFAULT);
+  if (filterFormElement) {
+    filterFormElement.addEventListener('click', onFilterClick);
+  }
+
+  setActiveFilter(FilterType.DEFAULT);
 };
 
-export { initFilters, FilterType };
+const destroyFilters = () => {
+  if (filterFormElement) {
+    filterFormElement.removeEventListener('click', onFilterClick);
+  }
+
+  allPhotos = [];
+  renderPicturesCallback = null;
+  currentFilter = FilterType.DEFAULT;
+};
+
+export { initFilters, destroyFilters, FilterType };
