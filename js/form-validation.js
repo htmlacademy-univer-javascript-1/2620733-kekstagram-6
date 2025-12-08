@@ -1,3 +1,5 @@
+'use strict';
+
 import { sendData } from './api.js';
 import { initImageLoader, resetUploadedImage } from './image-loader.js';
 import imageEditor from './image-editor.js';
@@ -20,7 +22,7 @@ const createFormModule = () => {
   let pristine = null;
 
   const initializePristine = () => {
-    if (!formElement || window.Pristine === undefined) {
+    if (!formElement || typeof window.Pristine === 'undefined') {
       return null;
     }
 
@@ -75,14 +77,20 @@ const createFormModule = () => {
     }
 
     const value = hashtagInputElement.value.trim();
+    if (value === '') {
+      return '';
+    }
+
     const hashtags = value.toLowerCase().split(/\s+/);
 
     if (hashtags.length > MAX_HASHTAGS_COUNT) {
       return `Не более ${MAX_HASHTAGS_COUNT} хэш-тегов`;
     }
 
-    if (value !== '' && !HASHTAG_REGEX.test(hashtags[0])) {
-      return `Хэш-тег должен начинаться с #, содержать буквы/цифры и быть от 1 до ${MAX_HASHTAG_LENGTH} символов`;
+    for (let i = 0; i < hashtags.length; i++) {
+      if (!HASHTAG_REGEX.test(hashtags[i])) {
+        return `Хэш-тег должен начинаться с #, содержать буквы/цифры и быть от 1 до ${MAX_HASHTAG_LENGTH} символов`;
+      }
     }
 
     const uniqueHashtags = new Set(hashtags);
@@ -125,14 +133,15 @@ const createFormModule = () => {
     }
 
     const file = fileInputElement.files[0];
-
-    if (file) {
-      if (typeof imageEditor?.init === 'function') {
-        imageEditor.init();
-      }
-
-      openForm();
+    if (!file) {
+      return;
     }
+
+    if (typeof imageEditor?.init === 'function') {
+      imageEditor.init();
+    }
+
+    openForm();
   };
 
   const openForm = () => {
@@ -198,7 +207,6 @@ const createFormModule = () => {
 
     const template = document.querySelector(`#${type}`);
     if (!template || !template.content) {
-      console.error(`Шаблон #${type} не найден или не поддерживает content`);
       return;
     }
 
@@ -217,7 +225,7 @@ const createFormModule = () => {
     document.body.appendChild(messageElement);
 
     const closeMessage = () => {
-      if (messageElement && messageElement.parentNode) {
+      if (messageElement.parentNode) {
         messageElement.remove();
       }
       document.removeEventListener('keydown', onMessageEscKeydown);
@@ -235,8 +243,7 @@ const createFormModule = () => {
     }
 
     messageElement.addEventListener('click', (evt) => {
-      const innerElement = evt.target.closest(`.${type}__inner`);
-      if (!innerElement) {
+      if (!evt.target.closest(`.${type}__inner`)) {
         closeMessage();
       }
     });
@@ -257,19 +264,13 @@ const createFormModule = () => {
     }
 
     submitButtonElement.disabled = isDisabled;
-
-    if (isDisabled) {
-      submitButtonElement.textContent = 'Публикую...';
-    } else {
-      submitButtonElement.textContent = 'Опубликовать';
-    }
+    submitButtonElement.textContent = isDisabled ? 'Публикую...' : 'Опубликовать';
   };
 
   const onFormSubmit = async (evt) => {
     evt.preventDefault();
 
     if (!pristine) {
-      console.error('Валидатор не инициализирован');
       return;
     }
 
@@ -291,7 +292,6 @@ const createFormModule = () => {
       closeForm();
 
     } catch (error) {
-      console.error('Ошибка при отправке формы:', error);
       showMessage('error', 'Ошибка загрузки файла. Попробуйте ещё раз.');
       toggleSubmitButton(false);
     }
@@ -317,18 +317,15 @@ const createFormModule = () => {
 
   const init = () => {
     if (!formElement) {
-      console.error('Форма .img-upload__form не найдена');
       return;
     }
 
     pristine = initializePristine();
     if (!pristine) {
-      console.error('Не удалось инициализировать валидатор Pristine');
       return;
     }
 
     addPristineValidators();
-
     initImageLoader();
 
     if (typeof imageEditor?.init === 'function') {
@@ -402,4 +399,5 @@ const createFormModule = () => {
 };
 
 const formModule = createFormModule();
+
 export default formModule;
