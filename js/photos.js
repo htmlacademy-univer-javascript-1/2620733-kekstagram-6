@@ -1,22 +1,26 @@
-const FILE_TYPES = ['jpg', 'jpeg', 'png'];
+const FILE_TYPES = ['gif', 'jpg', 'jpeg', 'png'];
 
-const fileInput = document.querySelector('#upload-file');
+const uploadFile = document.querySelector('#upload-file');
 const preview = document.querySelector('.img-upload__preview img');
-const effectsPreviews = document.querySelectorAll('.effects__preview');
+const effectList = document.querySelector('.effects__list');
+const smallImages = effectList.querySelectorAll('span');
 
-const initUploadImage = () => {
-  const file = fileInput.files[0];
+const onUploadImageChange = () => {
+  const file = uploadFile.files[0];
   const fileName = file.name.toLowerCase();
 
   const matches = FILE_TYPES.some((it) => fileName.endsWith(it));
 
   if (matches) {
-    const url = URL.createObjectURL(file);
-    preview.src = url;
-    effectsPreviews.forEach((item) => {
-      item.style.backgroundImage = `url(${url})`;
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      preview.src = reader.result;
+      smallImages.forEach((evt) => {
+        evt.style.backgroundImage = `url(${reader.result})`;
+      });
     });
+    reader.readAsDataURL(file);
   }
 };
 
-export { initUploadImage };
+uploadFile.addEventListener('change', onUploadImageChange);

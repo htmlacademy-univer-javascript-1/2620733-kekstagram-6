@@ -1,23 +1,43 @@
-const ALERT_SHOW_TIME = 5000;
+const DELAY = 500;
 
-export function getRandomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+const randomInteger = (min, max) => {
+  const lower = Math.ceil(Math.min(min, max));
+  const upper = Math.floor(Math.max(min, max));
 
-export function getUniqueNumbers(count, min, max) {
-  const numbers = [];
-  while (numbers.length < count) {
-    const num = getRandomInt(min, max);
-    if (!numbers.includes(num)) {
-      numbers.push(num);
-    }
+  const result = Math.random() * (upper - lower + 1) + lower;
+  return Math.floor(result);
+};
+
+const checkLenght = (inputString, maxLenght) => inputString.length <= maxLenght;
+const Keys = {
+  ESCAPE: 'Escape',
+  ESC: 'Esc'
+};
+
+const isEscapeKey = (evt) => evt.key === Keys.ESCAPE || evt.key === Keys.ESC;
+
+const closeOnEscKeyDown = (evt, cb) => {
+  if (isEscapeKey(evt)) {
+    cb();
   }
-  return numbers;
-}
+};
 
-export function showAlert(message) {
+const debounce = (cb) => {
+  let lastTimeOut = null;
+
+  return (...args) =>{
+    if (lastTimeOut){
+      window.clearTimeout(lastTimeOut);
+    }
+    lastTimeOut = window.setTimeout(()=>{
+      cb(...args);
+    }, DELAY);
+  };
+};
+
+const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
+const showAlert = (message, alertShowTime) => {
   const alertContainer = document.createElement('div');
-  alertContainer.classList.add('data-error');
   alertContainer.style.zIndex = '100';
   alertContainer.style.position = 'absolute';
   alertContainer.style.left = '0';
@@ -26,34 +46,13 @@ export function showAlert(message) {
   alertContainer.style.padding = '10px 3px';
   alertContainer.style.fontSize = '30px';
   alertContainer.style.textAlign = 'center';
-  alertContainer.style.backgroundColor = 'red';
-  alertContainer.style.color = 'white';
+  alertContainer.style.backgroundColor = '#f5cc00';
+
   alertContainer.textContent = message;
 
   document.body.append(alertContainer);
 
-  setTimeout(() => {
-    alertContainer.remove();
-  }, ALERT_SHOW_TIME);
-}
+  setTimeout(() => alertContainer.remove(), alertShowTime);
+};
 
-export function debounce (callback, timeoutDelay = 500) {
-  let timeoutId;
-
-  return (...rest) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => callback.apply(this, rest), timeoutDelay);
-  };
-}
-
-export function throttle (callback, delayBetweenFrames) {
-  let lastTime = 0;
-
-  return (...rest) => {
-    const now = new Date();
-    if (now - lastTime >= delayBetweenFrames) {
-      callback.apply(this, rest);
-      lastTime = now;
-    }
-  };
-}
+export {randomInteger, closeOnEscKeyDown, isEscapeKey, showAlert, checkLenght, debounce, shuffleArray};

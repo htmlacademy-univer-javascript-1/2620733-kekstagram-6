@@ -1,43 +1,28 @@
-const successTemplate = document.querySelector('#success').content.querySelector('.success');
-const errorTemplate = document.querySelector('#error').content.querySelector('.error');
+const SHOW_TIME = 5000;
 
-function showMessage(template, closeButtonClass) {
-  const messageElement = template.cloneNode(true);
-  const closeButton = messageElement.querySelector(closeButtonClass);
-  messageElement.style.zIndex = '100';
+import {loadData} from './api.js';
+import {showAlert} from './util.js';
+import {renderPictures} from './pictures.js';
+import './slider.js';
+import './hashtags.js';
+import {initEffects} from './actions.js';
+import './filters.js';
+import './photos.js';
+import './messages.js';
 
-  document.body.append(messageElement);
+initEffects();
+let photos = [];
 
-  function closeMessage() {
-    messageElement.remove();
-    document.removeEventListener('keydown', onDocumentKeydown);
-    document.removeEventListener('click', onDocumentClick);
-  }
+const onSuccess = (data) => {
+  photos = data.slice();
+  renderPictures(photos);
+  document.querySelector('.img-filters').classList.remove('img-filters--inactive');
+};
 
-  function onDocumentKeydown(evt) {
-    if (evt.key === 'Escape') {
-      evt.preventDefault();
-      closeMessage();
-    }
-  }
+const onFail = () => {
+  showAlert('Ошибка загрузки', SHOW_TIME);
+};
 
-  function onDocumentClick(evt) {
-    if (evt.target === messageElement) {
-      closeMessage();
-    }
-  }
+loadData(onSuccess, onFail);
 
-  closeButton.addEventListener('click', closeMessage);
-  document.addEventListener('keydown', onDocumentKeydown);
-  document.addEventListener('click', onDocumentClick);
-}
-
-function showSuccessMessage() {
-  showMessage(successTemplate, '.success__button');
-}
-
-function showErrorMessage() {
-  showMessage(errorTemplate, '.error__button');
-}
-
-export { showSuccessMessage, showErrorMessage };
+export {photos};

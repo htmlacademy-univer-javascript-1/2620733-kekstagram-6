@@ -1,41 +1,107 @@
-const SCALE_STEP = 25;
-const MIN_SCALE = 25;
-const MAX_SCALE = 100;
-const DEFAULT_SCALE = 100;
+import { isEscapeKey } from './util.js';
+import { onFilterButtonChange, effectList, sliderWrapper } from './actions.js';
+import {buttonAdjustment} from './hashtags.js';
 
-const smallerButton = document.querySelector('.scale__control--smaller');
-const biggerButton = document.querySelector('.scale__control--bigger');
-const scaleInput = document.querySelector('.scale__control--value');
-const imageElement = document.querySelector('.img-upload__preview img');
+const Zoom = {
+  MIN: 25,
+  MAX: 100,
+  STEP: 25,
+};
 
-function scaleImage(value) {
-  imageElement.style.transform = `scale(${value / 100})`;
-  scaleInput.value = `${value}%`;
-}
+const body = document.querySelector('body');
+const formUpload = body.querySelector('.img-upload__form');
+const overlay = formUpload.querySelector('.img-upload__overlay');
+const fileUpload = formUpload.querySelector('#upload-file');
+const formUploadClose = formUpload.querySelector('#upload-cancel');
+const minusButton = formUpload.querySelector('.scale__control--smaller');
+const plusButton = formUpload.querySelector('.scale__control--bigger');
+const scaleControlValue = formUpload.querySelector('.scale__control--value');
+const imagePreview = formUpload.querySelector('.img-upload__preview img');
+const commentsField = formUpload.querySelector('.text__description');
+const closeForm = () => {
+  overlay.classList.add('hidden');
+  body.classList.remove('modal-open');
+  effectList.removeEventListener('change', onFilterButtonChange);
 
-function onSmallerButtonClick() {
-  const currentValue = parseInt(scaleInput.value, 10);
-  let newValue = currentValue - SCALE_STEP;
-  if (newValue < MIN_SCALE) {
-    newValue = MIN_SCALE;
+  imagePreview.style.transform = '';
+  imagePreview.className = 'img-upload__preview';
+  imagePreview.style.filter = '';
+
+  formUpload.reset();
+};
+
+const onCloseFormEscKeyDown = (evt) => {
+  if (isEscapeKey(evt) &&
+      !evt.target.classList.contains('text__hashtags') &&
+      !evt.target.classList.contains('text__description')
+  ) {
+    evt.preventDefault();
+    closeForm();
+
+    document.removeEventListener('keydown', onCloseFormEscKeyDown);
   }
-  scaleImage(newValue);
-}
+};
 
-function onBiggerButtonClick() {
-  const currentValue = parseInt(scaleInput.value, 10);
-  let newValue = currentValue + SCALE_STEP;
-  if (newValue > MAX_SCALE) {
-    newValue = MAX_SCALE;
+const addFieldListener = (field) => {
+  const onFocus = () => {
+    document.removeEventListener('keydown', onCloseFormEscKeyDown);
+  };
+  const onBlur = () => {
+    document.addEventListener('keydown', onCloseFormEscKeyDown);
+  };
+
+  field.addEventListener('focus', onFocus);
+  field.addEventListener('blur', onBlur);
+};
+
+const changeImages = () => {
+  const file = fileUpload.files[0];
+  const fileUrl = URL.createObjectURL(file);
+
+  imagePreview.src = fileUrl;
+};
+
+const onFileUploadChange = () => {
+  overlay.classList.remove('hidden');
+  body.classList.add('modal-open');
+  changeImages();
+  document.addEventListener('keydown', onCloseFormEscKeyDown);
+  sliderWrapper.classList.add('hidden');
+  effectList.addEventListener('change', onFilterButtonChange);
+  addFieldListener(commentsField);
+  buttonAdjustment();
+};
+
+fileUpload.addEventListener('change', onFileUploadChange);
+
+formUploadClose.addEventListener('click', () => {
+  closeForm();
+});
+
+const changeZoom = (factor = 1) => {
+  let size = parseInt(scaleControlValue.value, 10) + (Zoom.STEP * factor);
+
+  if (size < Zoom.MIN) {
+    size = Zoom.MIN;
   }
-  scaleImage(newValue);
-}
 
-function resetScale() {
-  scaleImage(DEFAULT_SCALE);
-}
+  if (size > Zoom.MAX) {
+    size = Zoom.MAX;
+  }
 
-smallerButton.addEventListener('click', onSmallerButtonClick);
-biggerButton.addEventListener('click', onBiggerButtonClick);
+  scaleControlValue.value = `${size}%`;
+  imagePreview.style.transform = `scale(${size / 100})`;
+};
 
-export { resetScale };
+const onMinusButtonClick = () => {
+  changeZoom(-1);
+};
+
+const onPlusButtonClick = () => {
+  changeZoom();
+};
+
+minusButton.addEventListener('click', onMinusButtonClick);
+plusButton.addEventListener('click', onPlusButtonClick);
+
+export {closeForm, formUpload, imagePreview};
