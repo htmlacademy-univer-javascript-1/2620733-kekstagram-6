@@ -1,5 +1,6 @@
+'use strict';
 
-import { debounce, getRandomElements } from './util.js';
+import { debounce } from './util.js';
 
 const FilterType = {
   DEFAULT: 'default',
@@ -23,7 +24,17 @@ let allPhotos = [];
 let renderPicturesCallback = null;
 
 const getRandomPhotos = (photos) => {
-  return getRandomElements(photos, RANDOM_PHOTOS_COUNT);
+  if (photos.length <= RANDOM_PHOTOS_COUNT) {
+    return [...photos];
+  }
+
+  const shuffled = [...photos];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  return shuffled.slice(0, RANDOM_PHOTOS_COUNT);
 };
 
 const getDiscussedPhotos = (photos) => {
@@ -41,8 +52,6 @@ const applyFilter = (photos, filterType) => {
       return getRandomPhotos(photos);
     case FilterType.DISCUSSED:
       return getDiscussedPhotos(photos);
-    case FilterType.DEFAULT:
-      return [...photos];
     default:
       return [...photos];
   }
@@ -65,51 +74,38 @@ const setActiveFilter = (filterType) => {
 
   buttons.forEach((button) => {
     const isActive = button.id === `${FILTER_PREFIX}${filterType}`;
-
-    if (isActive) {
-      button.classList.add(ACTIVE_BUTTON_CLASS);
-    } else {
-      button.classList.remove(ACTIVE_BUTTON_CLASS);
-    }
+    button.classList.toggle(ACTIVE_BUTTON_CLASS, isActive);
   });
 };
 
-const updatePhotosDisplay = (photos, callback) => {
-  if (!picturesContainerElement || typeof callback !== 'function') {
+const updatePhotosDisplay = () => {
+  if (!picturesContainerElement || !renderPicturesCallback) {
     return;
   }
 
   picturesContainerElement.classList.add(UPDATING_CLASS);
 
-  const filteredPhotos = applyFilter(photos, currentFilter);
+  const filteredPhotos = applyFilter(allPhotos, currentFilter);
+
+  const fragment = document.createDocumentFragment();
+  renderPicturesCallback(filteredPhotos, fragment);
 
   const oldPictures = picturesContainerElement.querySelectorAll('.picture');
-  oldPictures.forEach((picture) => {
-    picture.remove();
-  });
+  oldPictures.forEach((picture) => picture.remove());
 
-  callback(filteredPhotos);
+  picturesContainerElement.append(fragment);
 
   setTimeout(() => {
     picturesContainerElement.classList.remove(UPDATING_CLASS);
   }, UPDATE_ANIMATION_DELAY);
 };
 
-const debouncedUpdateDisplay = debounce(() => {
-  if (allPhotos.length > 0 && renderPicturesCallback) {
-    updatePhotosDisplay(allPhotos, renderPicturesCallback);
-  }
-}, DEBOUNCE_DELAY);
+const debouncedUpdateDisplay = debounce(updatePhotosDisplay, DEBOUNCE_DELAY);
 
 const onFilterClick = (evt) => {
   const button = evt.target.closest('.img-filters__button');
 
-  if (!button) {
-    return;
-  }
-
-  const isButtonActive = button.classList.contains(ACTIVE_BUTTON_CLASS);
-  if (isButtonActive) {
+  if (!button || button.classList.contains(ACTIVE_BUTTON_CLASS)) {
     return;
   }
 
@@ -119,9 +115,7 @@ const onFilterClick = (evt) => {
   }
 
   const filterType = filterId.replace(FILTER_PREFIX, '');
-
-  const isValidFilter = Object.values(FilterType).includes(filterType);
-  if (!isValidFilter) {
+  if (!Object.values(FilterType).includes(filterType)) {
     return;
   }
 
@@ -129,18 +123,16 @@ const onFilterClick = (evt) => {
   debouncedUpdateDisplay();
 };
 
-
 const initFilters = (photos, renderFunction) => {
   if (!Array.isArray(photos) || photos.length === 0) {
     return;
   }
 
   if (typeof renderFunction !== 'function') {
-    console.error('renderFunction должна быть функцией');
     return;
   }
 
-  allPhotos = photos.slice();
+  allPhotos = [...photos];
   renderPicturesCallback = renderFunction;
 
   showFilters();
@@ -150,6 +142,8 @@ const initFilters = (photos, renderFunction) => {
   }
 
   setActiveFilter(FilterType.DEFAULT);
+
+  updatePhotosDisplay();
 };
 
 const destroyFilters = () => {
@@ -160,6 +154,10 @@ const destroyFilters = () => {
   allPhotos = [];
   renderPicturesCallback = null;
   currentFilter = FilterType.DEFAULT;
+
+  if (filtersContainerElement) {
+    filtersContainerElement.classList.add('img-filters--inactive');
+  }
 };
 
 export { initFilters, destroyFilters, FilterType };
