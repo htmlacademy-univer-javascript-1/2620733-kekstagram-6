@@ -1,56 +1,34 @@
-import { openBigPicture } from './big-picture.js';
-import { loadAndRenderPictures } from './pictures.js';
-import formModule from './form-validation.js';
-import imageEditor from './image-editor.js';
+import { getData } from './api.js';
+import { showAlert } from './util.js';
+import thumbnailRenderer from './thumbnail-renderer.js';
+import fullscreenViewer from './fullscreen-viewer.js';
+import { initUploadForm } from './upload-form.js';
+import { initFilter } from './filters.js';
 
-let allPhotos = [];
+initUploadForm();
 
-const initThumbnailHandlers = () => {
-  const picturesContainer = document.querySelector('.pictures');
+getData()
+  .then((photos) => {
+    thumbnailRenderer.renderThumbnails(photos);
 
-  if (!picturesContainer) return;
+    initFilter(photos);
 
-  picturesContainer.addEventListener('click', (evt) => {
-    const pictureElement = evt.target.closest('.picture');
+    document.querySelector('.pictures').addEventListener('click', (evt) => {
+      const thumbnail = evt.target.closest('.picture');
+      if (thumbnail) {
+        evt.preventDefault();
+        const photoId = parseInt(thumbnail.dataset.photoId, 10);
 
-    if (pictureElement) {
-      evt.preventDefault();
+        const photoData = photos.find((photo) => photo.id === photoId);
 
-      const pictureElements = picturesContainer.querySelectorAll('.picture');
-      const index = Array.from(pictureElements).indexOf(pictureElement);
-
-      if (index !== -1 && allPhotos[index]) {
-        openBigPicture(allPhotos[index]);
+        if (photoData) {
+          fullscreenViewer.openFullscreen(photoData);
+        }
       }
-    }
+    });
+
+    fullscreenViewer.init();
+  })
+  .catch((err) => {
+    showAlert(err.message);
   });
-};
-
-const initApp = async () => {
-  try {
-    console.log('Инициализация приложения...');
-
-    allPhotos = await loadAndRenderPictures() || [];
-
-    initThumbnailHandlers();
-
-    formModule.init();
-
-    if (typeof imageEditor.init === 'function') {
-      imageEditor.init();
-    }
-
-    console.log('Приложение успешно инициализировано');
-
-  } catch (error) {
-    console.error('Ошибка при инициализации приложения:', error);
-  }
-};
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
-} else {
-  initApp();
-}
-
-export { allPhotos };
