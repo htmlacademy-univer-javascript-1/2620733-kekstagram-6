@@ -1,145 +1,125 @@
-import { resetScale } from './slider.js';
-import { resetEffects } from './effect.js';
-import { sendData } from './api.js';
-import { showSuccessMessage, showErrorMessage } from './message.js';
-import { initUploadImage } from './upload-image.js';
+import { restoreImageScale } from './scale-editor.js';
+import { restoreDefaultEffect } from './picture-effects.js';
+import { uploadPhoto } from './api.js';
+import { displaySuccessMessage, displayErrorMessage } from './message.js';
+import { loadSelectedImage } from './image-preview.js';
 
-const form = document.querySelector('.img-upload__form');
-const overlay = document.querySelector('.img-upload__overlay');
-const body = document.querySelector('body');
+const MAX_HASHTAGS = 5;
+const COMMENT_MAX_LENGTH = 140;
+const HASHTAG_PATTERN = /^#[a-zа-яё0-9]{1,19}$/i;
+
+const imageUploadForm = document.querySelector('.img-upload__form');
+const formOverlay = document.querySelector('.img-upload__overlay');
+const pageBody = document.querySelector('body');
 const cancelButton = document.querySelector('#upload-cancel');
-const fileInput = document.querySelector('#upload-file');
-const hashtagField = document.querySelector('.text__hashtags');
-const commentField = document.querySelector('.text__description');
-const submitButton = document.querySelector('#upload-submit');
+const imageFileInput = document.querySelector('#upload-file');
+const hashtagsInput = document.querySelector('.text__hashtags');
+const commentInput = document.querySelector('.text__description');
+const submitFormButton = document.querySelector('#upload-submit');
 
-const MAX_HASHTAG_COUNT = 5;
-const MAX_COMMENT_LENGTH = 140;
-const TAG_REGEX = /^#[a-zа-яё0-9]{1,19}$/i;
-
-const SubmitButtonText = {
-  IDLE: 'Опубликовать',
-  SENDING: 'Публикую...',
+const SubmitButtonState = {
+  DEFAULT: 'Опубликовать',
+  PROCESSING: 'Публикую...'
 };
 
-const pristine = new Pristine(form, {
+const pristineValidator = new window.Pristine(imageUploadForm, {
   classTo: 'img-upload__field-wrapper',
   errorTextParent: 'img-upload__field-wrapper',
   errorTextClass: 'img-upload__field-wrapper--error',
 });
 
+const splitHashtags = (inputString) => inputString.trim().split(/\s+/).filter(Boolean);
 
-function getTagsFromValue(value) {
-  return value.trim().split(' ').filter((tag) => tag.trim().length);
-}
-
-function validateTagsFormat(value) {
-  if (value.length === 0) {
+const validateHashtagFormat = (value) => {
+  if (!value.trim()) {
     return true;
   }
-  const tags = getTagsFromValue(value);
-  return tags.every((tag) => TAG_REGEX.test(tag));
-}
+  const tags = splitHashtags(value);
+  return tags.every((tag) => HASHTAG_PATTERN.test(tag));
+};
+pristineValidator.addValidator(hashtagsInput, validateHashtagFormat, 'Некорректный хэш-тег. Используйте #, буквы и цифры (макс. 20 символов).', 2, false);
 
-function validateTagsCount(value) {
-  const tags = getTagsFromValue(value);
-  return tags.length <= MAX_HASHTAG_COUNT;
-}
+const validateHashtagCount = (value) => {
+  const tags = splitHashtags(value);
+  return tags.length <= MAX_HASHTAGS;
+};
+pristineValidator.addValidator(hashtagsInput, validateHashtagCount, `Не более ${MAX_HASHTAGS} хэш-тегов.`, 1, false);
 
-function validateTagsUnique(value) {
-  const tags = getTagsFromValue(value);
+const validateHashtagUniqueness = (value) => {
+  const tags = splitHashtags(value);
   const lowerCaseTags = tags.map((tag) => tag.toLowerCase());
-  return lowerCaseTags.length === new Set(lowerCaseTags).size;
-}
+  return new Set(lowerCaseTags).size === lowerCaseTags.length;
+};
+pristineValidator.addValidator(hashtagsInput, validateHashtagUniqueness, 'Хэш-теги не должны повторяться.', 3, false);
 
-function validateComment(value) {
-  return value.length <= MAX_COMMENT_LENGTH;
-}
+const validateCommentLength = (value) => value.length <= COMMENT_MAX_LENGTH;
+pristineValidator.addValidator(commentInput, validateCommentLength, `Комментарий не может превышать ${COMMENT_MAX_LENGTH} символов.`, 1, false);
 
-pristine.addValidator(hashtagField, validateTagsFormat, 'Хэш-тег должен начинаться с #, содержать буквы/цифры и быть не длиннее 20 символов');
-pristine.addValidator(hashtagField, validateTagsCount, `Нельзя указать больше ${MAX_HASHTAG_COUNT} хэш-тегов`);
-pristine.addValidator(hashtagField, validateTagsUnique, 'Хэш-теги не должны повторяться');
-pristine.addValidator(commentField, validateComment, `Длина комментария не может быть больше ${MAX_COMMENT_LENGTH} символов`);
+const showForm = () => {
+  formOverlay.classList.remove('hidden');
+  pageBody.classList.add('modal-open');
+  document.addEventListener('keydown', onDocumentKeyDown);
+};
 
+const hideForm = () => {
+  imageUploadForm.reset();
+  pristineValidator.reset();
+  restoreImageScale();
+  restoreDefaultEffect();
+  formOverlay.classList.add('hidden');
+  pageBody.classList.remove('modal-open');
+  document.removeEventListener('keydown', onDocumentKeyDown);
+};
 
-function openModal() {
-  overlay.classList.remove('hidden');
-  body.classList.add('modal-open');
-  document.addEventListener('keydown', onDocumentKeydown);
-}
+const toggleSubmitButton = (isActive = false) => {
+  submitFormButton.disabled = isActive;
+  submitFormButton.textContent = isActive ? SubmitButtonState.PROCESSING : SubmitButtonState.DEFAULT;
+};
 
-function closeModal() {
-  form.reset();
-  pristine.reset();
-  resetScale();
-  resetEffects();
-  overlay.classList.add('hidden');
-  body.classList.remove('modal-open');
-  document.removeEventListener('keydown', onDocumentKeydown);
-}
+const onFileSelect = () => {
+  loadSelectedImage();
+  showForm();
+};
 
-function blockSubmitButton() {
-  submitButton.disabled = true;
-  submitButton.textContent = SubmitButtonText.SENDING;
-}
+const onCancelClick = () => hideForm();
 
-function unblockSubmitButton() {
-  submitButton.disabled = false;
-  submitButton.textContent = SubmitButtonText.IDLE;
-}
-
-function onFileInputChange() {
-  initUploadImage();
-  openModal();
-}
-
-function onCancelButtonClick() {
-  closeModal();
-}
-
-function onDocumentKeydown(evt) {
-  if (evt.key === 'Escape') {
-    const isErrorVisible = document.querySelector('.error');
-    if (isErrorVisible) {
+const onDocumentKeyDown = (event) => {
+  if (event.key === 'Escape') {
+    const isErrorPopupOpen = document.querySelector('.error');
+    const isFocusedOnTextInput = [hashtagsInput, commentInput].includes(document.activeElement);
+    if (isErrorPopupOpen || isFocusedOnTextInput) {
       return;
     }
-    evt.preventDefault();
-    closeModal();
+    event.preventDefault();
+    hideForm();
   }
-}
+};
 
-function onInputKeydown(evt) {
-  if (evt.key === 'Escape') {
-    evt.stopPropagation();
+const onFormSubmit = (event) => {
+  event.preventDefault();
+  const isFormValid = pristineValidator.validate();
+  if (!isFormValid) {
+    return;
   }
-}
+  toggleSubmitButton(true);
+  const formDataToSend = new FormData(event.target);
+  uploadPhoto(formDataToSend)
+    .then(() => {
+      hideForm();
+      displaySuccessMessage();
+    })
+    .catch(() => {
+      displayErrorMessage();
+    })
+    .finally(() => {
+      toggleSubmitButton(false);
+    });
+};
 
-function onFormSubmit(evt) {
-  evt.preventDefault();
+const initializeUploadForm = () => {
+  imageFileInput.addEventListener('change', onFileSelect);
+  cancelButton.addEventListener('click', onCancelClick);
+  imageUploadForm.addEventListener('submit', onFormSubmit);
+};
 
-  const isValid = pristine.validate();
-  if (isValid) {
-    blockSubmitButton();
-    sendData(new FormData(evt.target))
-      .then(() => {
-        closeModal();
-        showSuccessMessage();
-      })
-      .catch(() => {
-        showErrorMessage();
-      })
-      .finally(() => {
-        unblockSubmitButton();
-      });
-  }
-}
-
-function initUploadForm() {
-  fileInput.addEventListener('change', onFileInputChange);
-  cancelButton.addEventListener('click', onCancelButtonClick);
-  hashtagField.addEventListener('keydown', onInputKeydown);
-  commentField.addEventListener('keydown', onInputKeydown);
-  form.addEventListener('submit', onFormSubmit);
-}
-
-export { initUploadForm };
+export { initializeUploadForm };

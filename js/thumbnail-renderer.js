@@ -1,31 +1,24 @@
-const thumbnailRenderer = (function() {
-  const pictureTemplate = document.querySelector('#picture').content.querySelector('.picture');
+const photoThumbnailTemplate = document.querySelector('#picture').content.querySelector('.picture');
 
-  function createThumbnail(photoData) {
-    const thumbnailElement = pictureTemplate.cloneNode(true);
-    const image = thumbnailElement.querySelector('.picture__img');
-    image.src = photoData.url;
-    image.alt = photoData.description;
-    thumbnailElement.querySelector('.picture__comments').textContent = photoData.comments.length;
-    thumbnailElement.querySelector('.picture__likes').textContent = photoData.likes;
+const generateThumbnailElement = (photoDataItem) => {
+  const thumbnailElement = photoThumbnailTemplate.cloneNode(true);
+  const thumbnailImage = thumbnailElement.querySelector('.picture__img');
+  thumbnailImage.src = photoDataItem.url;
+  thumbnailImage.alt = photoDataItem.description;
+  thumbnailElement.querySelector('.picture__comments').textContent = photoDataItem.comments.length;
+  thumbnailElement.querySelector('.picture__likes').textContent = photoDataItem.likes;
+  thumbnailElement.dataset.photoId = photoDataItem.id;
+  return thumbnailElement;
+};
 
-    thumbnailElement.dataset.photoId = photoData.id;
-    return thumbnailElement;
-  }
+const displayPhotoThumbnails = (photosArray) => {
+  const picturesContainer = document.querySelector('.pictures');
+  const documentFragment = document.createDocumentFragment();
+  photosArray.forEach((photoItem) => {
+    const thumbnail = generateThumbnailElement(photoItem);
+    documentFragment.appendChild(thumbnail);
+  });
+  picturesContainer.appendChild(documentFragment);
+};
 
-  function renderThumbnails(photosData) {
-    const container = document.querySelector('.pictures');
-    const fragment = document.createDocumentFragment();
-    photosData.forEach((photo) => {
-      const thumbnail = createThumbnail(photo);
-      fragment.appendChild(thumbnail);
-    });
-    container.appendChild(fragment);
-  }
-
-  return {
-    renderThumbnails
-  };
-})();
-
-export default thumbnailRenderer;
+export { displayPhotoThumbnails };

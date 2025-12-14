@@ -1,34 +1,30 @@
-import { getData } from './api.js';
-import { showAlert } from './util.js';
-import thumbnailRenderer from './thumbnail-renderer.js';
-import fullscreenViewer from './fullscreen-viewer.js';
-import { initUploadForm } from './upload-form.js';
-import { initFilter } from './filters.js';
+import { fetchPhotos } from './api.js';
+import { showAlertMessage } from './utils.js';
+import { displayPhotoThumbnails } from './thumbnail-renderer.js';
+import { openFullSizeView, initializeFullscreenViewer } from './fullscreen-viewer.js';
+import { initializeUploadForm } from './upload-form.js';
+import { initializeFilters } from './picture-filters.js';
 
-initUploadForm();
+initializeUploadForm();
+initializeFullscreenViewer();
 
-getData()
-  .then((photos) => {
-    thumbnailRenderer.renderThumbnails(photos);
-
-    initFilter(photos);
-
-    document.querySelector('.pictures').addEventListener('click', (evt) => {
-      const thumbnail = evt.target.closest('.picture');
-      if (thumbnail) {
-        evt.preventDefault();
-        const photoId = parseInt(thumbnail.dataset.photoId, 10);
-
-        const photoData = photos.find((photo) => photo.id === photoId);
-
-        if (photoData) {
-          fullscreenViewer.openFullscreen(photoData);
-        }
+fetchPhotos()
+  .then((photosData) => {
+    displayPhotoThumbnails(photosData);
+    initializeFilters(photosData);
+    document.querySelector('.pictures').addEventListener('click', (event) => {
+      const clickedThumbnail = event.target.closest('.picture');
+      if (!clickedThumbnail) {
+        return;
+      }
+      event.preventDefault();
+      const photoId = parseInt(clickedThumbnail.dataset.photoId, 10);
+      const targetPhotoData = photosData.find((photo) => photo.id === photoId);
+      if (targetPhotoData) {
+        openFullSizeView(targetPhotoData);
       }
     });
-
-    fullscreenViewer.init();
   })
-  .catch((err) => {
-    showAlert(err.message);
+  .catch((error) => {
+    showAlertMessage(error.message);
   });
