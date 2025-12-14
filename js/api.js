@@ -1,34 +1,40 @@
-const BASE_URL = 'https://29.javascript.htmlacademy.pro/kekstagram';
-
-const Route = {
-  GET_DATA: '/data',
-  SEND_DATA: '/',
+const ServerConfig = {
+  ADDRESS: 'https://29.javascript.htmlacademy.pro/kekstagram',
+  PATH: {
+    DATA: '/data',
+    POST: '/'
+  },
+  METHOD: {
+    GET: 'GET',
+    POST: 'POST'
+  }
 };
 
-const Method = {
-  GET: 'GET',
-  POST: 'POST',
+const ErrorMessage = {
+  LOAD: 'Не удалось загрузить фотографии. Попробуйте перезагрузить страницу.',
+  SEND: 'Не удалось отправить фотографию. Пожалуйста, попробуйте еще раз.'
 };
 
-const ErrorText = {
-  GET_DATA: 'Не удалось загрузить данные. Попробуйте обновить страницу',
-  SEND_DATA: 'Не удалось отправить форму. Попробуйте ещё раз',
-};
+const createRequest = (route, errorMessage, method = ServerConfig.METHOD.GET, payload = null) => {
+  const url = `${ServerConfig.ADDRESS}${route}`;
+  const options = {
+    method: method,
+    body: payload
+  };
 
-const load = (route, errorText, method = Method.GET, body = null) =>
-  fetch(`${BASE_URL}${route}`, { method, body })
-    .then((response) => {
-      if (!response.ok) {
+  return window.fetch(url, options)
+    .then((serverResponse) => {
+      if (!serverResponse.ok) {
         throw new Error();
       }
-      return response.json();
+      return serverResponse.json();
     })
     .catch(() => {
-      throw new Error(errorText);
+      throw new Error(errorMessage);
     });
+};
 
-const getData = () => load(Route.GET_DATA, ErrorText.GET_DATA);
+const fetchPhotos = () => createRequest(ServerConfig.PATH.DATA, ErrorMessage.LOAD);
+const uploadPhoto = (formData) => createRequest(ServerConfig.PATH.POST, ErrorMessage.SEND, ServerConfig.METHOD.POST, formData);
 
-const sendData = (body) => load(Route.SEND_DATA, ErrorText.SEND_DATA, Method.POST, body);
-
-export { getData, sendData };
+export { fetchPhotos, uploadPhoto };

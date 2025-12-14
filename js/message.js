@@ -1,43 +1,38 @@
-const successTemplate = document.querySelector('#success').content.querySelector('.success');
-const errorTemplate = document.querySelector('#error').content.querySelector('.error');
+const successMessageTemplate = document.querySelector('#success').content.querySelector('.success');
+const errorMessageTemplate = document.querySelector('#error').content.querySelector('.error');
 
-function showMessage(template, closeButtonClass) {
+const closeMessageModal = (messageElement, closeCallback) => {
+  messageElement.remove();
+  document.removeEventListener('keydown', closeCallback);
+  document.removeEventListener('click', closeCallback);
+};
+
+const createMessageModal = (template, closeButtonSelector) => {
   const messageElement = template.cloneNode(true);
-  const closeButton = messageElement.querySelector(closeButtonClass);
+  const closeButton = messageElement.querySelector(closeButtonSelector);
   messageElement.style.zIndex = '100';
-
   document.body.append(messageElement);
-
-  function closeMessage() {
-    messageElement.remove();
-    document.removeEventListener('keydown', onDocumentKeydown);
-    document.removeEventListener('click', onDocumentClick);
-  }
-
-  function onDocumentKeydown(evt) {
-    if (evt.key === 'Escape') {
-      evt.preventDefault();
-      closeMessage();
+  const onKeyDown = (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeMessageModal(messageElement, onKeyDown);
     }
-  }
-
-  function onDocumentClick(evt) {
-    if (evt.target === messageElement) {
-      closeMessage();
+  };
+  const onClick = (event) => {
+    if (event.target === messageElement || event.target === closeButton) {
+      closeMessageModal(messageElement, onKeyDown);
     }
-  }
+  };
+  document.addEventListener('keydown', onKeyDown);
+  document.addEventListener('click', onClick);
+};
 
-  closeButton.addEventListener('click', closeMessage);
-  document.addEventListener('keydown', onDocumentKeydown);
-  document.addEventListener('click', onDocumentClick);
-}
+const displaySuccessMessage = () => {
+  createMessageModal(successMessageTemplate, '.success__button');
+};
 
-function showSuccessMessage() {
-  showMessage(successTemplate, '.success__button');
-}
+const displayErrorMessage = () => {
+  createMessageModal(errorMessageTemplate, '.error__button');
+};
 
-function showErrorMessage() {
-  showMessage(errorTemplate, '.error__button');
-}
-
-export { showSuccessMessage, showErrorMessage };
+export { displaySuccessMessage, displayErrorMessage };
